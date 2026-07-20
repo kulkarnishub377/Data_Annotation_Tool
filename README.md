@@ -23,15 +23,26 @@ A complete, professional-grade, end-to-end web application for auto-annotating v
 *   **Dynamic Class Popups & Analytics**: Inline class selection popups when drawing new boxes. Dynamic visual progress ring and real-time class distribution bar charts tracking dataset balance.
 *   **Session Tracking**: Topbar session timer tracks your active annotation time.
 
+## 🏗️ System Architecture
+
+*   **Backend (Flask)**: Serves the REST API and manages application state via a lightweight thread-safe SQLite database (`state.db`).
+*   **Background Processing**: Uses Python `threading.Thread` and `queue.Queue` to run YOLO inference asynchronously, ensuring the main UI thread never blocks during pre-annotation or heavy file ingestion.
+*   **Inference Engine (YOLO)**: Leverages the `ultralytics` package. The system dynamically queries PyTorch/CUDA/MPS at startup to allocate the most efficient compute device.
+*   **Frontend**: Pure HTML5 Canvas, CSS flexbox/grid, and vanilla JavaScript. It manages complex coordinate math for panning/zooming and uses Server-Sent Events (SSE) to receive real-time training logs from the backend subprocess.
+
 ## 📂 Directory Structure
 
 ```text
 Data_annotrator_tool/
-├── app.py          # Backend server (Flask, YOLO inference, SQLite state, Threads)
-├── app.js          # Core frontend logic (Canvas math, SSE listeners, API calls)
-├── index.html      # Frontend UI (Data Annotation Tool markup)
-├── style.css       # Custom dark-theme styling, animations, flexbox layouts
-└── README.md       # Documentation
+├── app.py              # Backend server (Flask, YOLO inference, SQLite state, Threads)
+├── app.js              # Core frontend logic (Canvas math, SSE listeners, API calls)
+├── index.html          # Frontend UI (Data Annotation Tool markup)
+├── style.css           # Custom dark-theme styling, animations, flexbox layouts
+├── requirements.txt    # Python dependencies
+├── .gitignore          # Git exclusion rules
+├── LICENSE             # MIT License
+├── tests/              # Unit testing suite
+└── README.md           # Documentation
 ```
 
 ## 🛠️ Setup & Installation
@@ -64,10 +75,10 @@ source venv/bin/activate
 
 ### 3. Install Dependencies
 
-Install the required Python packages:
+Install the required Python packages using the provided requirements file:
 
 ```bash
-pip install flask ultralytics pillow
+pip install -r requirements.txt
 ```
 > *Note: `pillow` is strictly required for generating optimized, heavily cached thumbnails in the Grid View.*
 
@@ -115,6 +126,13 @@ Then, open your browser and navigate to: **[http://127.0.0.1:8051](http://127.0.
 | `Ctrl + S` | Save annotations manually |
 | `Wheel` | Zoom in/out (centered on cursor) |
 | `Mid-drag`| Pan canvas |
+
+## 🧪 Testing
+
+To verify your environment is correctly configured, run the included test suite:
+```bash
+python -m unittest discover tests
+```
 
 ---
 *Data Annotation Tool — Built for high-speed, professional computer vision workflows.*
