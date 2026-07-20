@@ -4,6 +4,8 @@
 
 A complete, professional-grade, end-to-end web application for auto-annotating vehicle datasets, reviewing and editing annotations, splitting datasets, and directly training YOLO models from a sleek, intuitive, and highly responsive UI.
 
+> **🎯 Perfect for Fine-Tuning:** Seamlessly load your old custom models to continue training and fine-tuning them on entirely new datasets directly from the browser!
+
 ## 🚀 Key Features
 
 ### Powerful Backend (Flask & YOLO Integration)
