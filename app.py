@@ -9,9 +9,10 @@ import time
 import subprocess
 import zipfile
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_file, Response
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request
 from werkzeug.utils import secure_filename
 import uuid
+import tempfile
 import re
 from dotenv import load_dotenv
 
@@ -521,6 +522,7 @@ def api_ingest():
     if not src or not os.path.isdir(src):
         return jsonify({"error": "invalid source dir"}), 400
 
+    set_active_dataset(src)
     job_id = f"ingest_{int(time.time())}"
     _job_progress[job_id] = {"total": 0, "done": 0, "status": "starting"}
 
@@ -604,6 +606,9 @@ def api_ingest_append():
 def api_auto_split():
     data   = request.get_json()
     ratios = data.get("ratios", [0.70, 0.20, 0.10])
+    
+    if len(ratios) != 3 or any(r < 0 or r > 1 for r in ratios) or not (0.99 <= sum(ratios) <= 1.01):
+        return jsonify({"error": "Invalid ratios. Must be exactly 3 numbers between 0 and 1 that sum to 1."}), 400
 
     all_entries = db_all_entries()
     if not all_entries:
@@ -617,8 +622,20 @@ def api_auto_split():
     random.shuffle(annotated)
 
     n  = len(annotated)
-    nt = max(1, int(n * ratios[0]))
-    nv = max(1, int(n * ratios[1]))
+    nt = max(0, int(round(n * ratios[0])))
+    nv = max(0, int(round(n * ratios[1])))
+    ntest = n - nt - nv
+    
+    # Handle extremely small datasets gracefully
+    if n > 0 and nt == 0 and nv == 0 and ntest == 0:
+        nt = n
+        ntest = 0
+    elif ntest < 0:
+        # Adjustment if rounding pushed nt+nv > n
+        if nv > 0: nv += ntest
+        else: nt += ntest
+        ntest = 0
+
     splits = {
         "train": annotated[:nt],
         "valid": annotated[nt:nt + nv],
@@ -959,17 +976,27 @@ def api_models():
 # ─── API: EXPORT DATASET ─────────────────────────────────────────────────────
 @app.route("/api/export")
 def api_export():
-    """Zips the annotated dataset and serves it for download."""
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+    """Zips the annotated dataset to disk and serves it for download."""
+    temp_fd, temp_path = tempfile.mkstemp(suffix=".zip", prefix=f"{_current_dataset_name}_")
+    os.close(temp_fd) 
+    
+    with zipfile.ZipFile(temp_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         for root, dirs, files in os.walk(OUTPUT_DIR):
             if "state.db" in files: files.remove("state.db") # Don't export internal db
             for file in files:
                 fpath = os.path.join(root, file)
                 arcname = os.path.relpath(fpath, OUTPUT_DIR)
                 zf.write(fpath, arcname)
-    memory_file.seek(0)
-    return send_file(memory_file, download_name="dataset_export.zip", as_attachment=True)
+                
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(temp_path)
+        except Exception:
+            pass
+        return response
+
+    return send_file(temp_path, download_name=f"{_current_dataset_name}_export.zip", as_attachment=True)
 
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
