@@ -329,17 +329,20 @@ def list_images(src_dir):
 
 
 def label_path(split, name):
-    return os.path.join(OUTPUT_DIR, split, "labels", os.path.splitext(name)[0] + ".txt")
+    validate_split(split)
+    return secure_path(OUTPUT_DIR, split, "labels", os.path.splitext(name)[0] + ".txt")
 
 
 def image_path(split, name):
-    return os.path.join(OUTPUT_DIR, split, "images", name)
+    validate_split(split)
+    return secure_path(OUTPUT_DIR, split, "images", name)
 
 
 def annotate_one(img_src_path, lbl_dst_path):
     """Run full-res YOLO on one image → write strict YOLO label file."""
-    m = get_model()
-    results = m(img_src_path, conf=CONF_THRESH, verbose=False, device=_device)
+    with _model_lock:
+        m = get_model()
+        results = m(img_src_path, conf=CONF_THRESH, verbose=False, device=_device)
     boxes = results[0].boxes
     with open(lbl_dst_path, "w") as f:
         if boxes is not None and len(boxes.cls) > 0:
@@ -370,13 +373,21 @@ def _preanno_worker():
     """Daemon thread: pops image paths from queue and annotates them."""
     while True:
         try:
-            split, name = _preanno_queue.get(timeout=5)
+            job_session, split, name = _preanno_queue.get(timeout=5)
         except _queue_mod.Empty:
             continue
+            
+        if job_session != _current_session_id:
+            _preanno_queue.task_done()
+            continue
+            
         lbl = label_path(split, name)
         dst = image_path(split, name)
         if not os.path.exists(lbl) and os.path.exists(dst):
             with get_img_lock(f"{split}/{name}"):
+                if job_session != _current_session_id:
+                    _preanno_queue.task_done()
+                    continue
                 if not os.path.exists(lbl):
                     try:
                         os.makedirs(os.path.dirname(lbl), exist_ok=True)
@@ -392,8 +403,9 @@ _preanno_thread.start()
 
 def enqueue_preanno(split, names):
     """Add a list of image names to the pre-annotation queue."""
+    session_id = _current_session_id
     for n in names:
-        _preanno_queue.put((split, n))
+        _preanno_queue.put((session_id, split, n))
 
 
 # ─── API: DEVICE INFO ────────────────────────────────────────────────────────
