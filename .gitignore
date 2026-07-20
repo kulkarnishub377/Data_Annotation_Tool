@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+.env
+
+# SQLite
+*.db
+*.sqlite3
+
+# YOLO / ML
+runs/
+yolov8n.pt
+yolov8s.pt
+yolov8m.pt
+yolov8l.pt
+yolov8x.pt
+
+# Output directories
+annotated_dataset/
+vedio/
+
+# OS
+.DS_Store
+Thumbs.db
