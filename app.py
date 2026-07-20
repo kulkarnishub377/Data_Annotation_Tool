@@ -10,14 +10,18 @@ import subprocess
 import zipfile
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_file, Response
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 # ─── APP ─────────────────────────────────────────────────────────────────────
 app = Flask(__name__, template_folder='.')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-BASE_DIR    = r"D:\model_train"
-OUTPUT_DIR  = r"D:\model_train\annotated_dataset"
-CONF_THRESH = 0.25
+BASE_DIR    = os.environ.get("BASE_DIR", r"D:\model_train")
+OUTPUT_DIR  = os.environ.get("OUTPUT_DIR", r"D:\model_train\annotated_dataset")
+CONF_THRESH = float(os.environ.get("CONF_THRESH", "0.25"))
 IMG_EXTS    = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
 # Supported inference model formats
 MODEL_EXTS  = {'.pt', '.onnx', '.engine', '.tflite', '.torchscript'}

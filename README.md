@@ -38,6 +38,8 @@ Data_annotrator_tool/
 ├── app.js              # Core frontend logic (Canvas math, SSE listeners, API calls)
 ├── index.html          # Frontend UI (Data Annotation Tool markup)
 ├── style.css           # Custom dark-theme styling, animations, flexbox layouts
+├── .env.example        # Environment variables template
+├── refactor.py         # Development script for legacy dataset upgrades
 ├── requirements.txt    # Python dependencies
 ├── .gitignore          # Git exclusion rules
 ├── LICENSE             # MIT License
@@ -84,11 +86,17 @@ pip install -r requirements.txt
 
 ### 4. Configuration
 
-Open `app.py` and modify the paths at the top of the file to point to your local directories:
+Configure your environment variables by copying the example file:
 
-```python
-BASE_DIR   = r"D:\model_train"                  # Root directory containing raw image folders
-OUTPUT_DIR = r"D:\model_train\annotated_dataset" # Directory where the finalized dataset is generated
+```bash
+cp .env.example .env
+```
+
+Then open `.env` and edit the paths to point to your local directories (this avoids hard-coded paths in the code!):
+
+```env
+BASE_DIR=D:\your_raw_images
+OUTPUT_DIR=D:\your_raw_images\annotated_dataset
 ```
 
 ## 🚦 Running the Application
