@@ -20,6 +20,26 @@ class TestApp(unittest.TestCase):
         """Test that auto detect device returns a valid device string."""
         device = auto_detect_device()
         self.assertIn(device, ['cpu', 'mps', '0', '1', '2', '3'])
+        
+    def test_validate_split(self):
+        from app import validate_split
+        validate_split("train")
+        validate_split("valid")
+        validate_split("test")
+        with self.assertRaises(ValueError):
+            validate_split("unknown")
+            
+    def test_secure_path_traversal(self):
+        from app import secure_path
+        base = "/fake/base/dir"
+        
+        # Valid path
+        safe = secure_path(base, "images", "car.jpg")
+        self.assertTrue(safe.startswith(os.path.abspath(base)))
+        
+        # Path traversal attack
+        with self.assertRaises(ValueError):
+            secure_path(base, "images", "../../../etc/passwd")
 
 if __name__ == '__main__':
     unittest.main()

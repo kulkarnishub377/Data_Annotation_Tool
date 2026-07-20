@@ -109,6 +109,9 @@ python app.py
 
 Then, open your browser and navigate to: **[http://127.0.0.1:8051](http://127.0.0.1:8051)**
 
+> [!CAUTION]
+> **Security Notice:** The application has no authentication and may provide filesystem/model-management functionality. Do not expose the server directly to the public internet. Use only on trusted networks.
+
 ## 🔄 End-to-End Workflow
 
 1.  **Select Model**: Pick any supported model file (`.pt`, `.onnx`, etc.). The tool auto-detects your GPU and extracts model classes.
