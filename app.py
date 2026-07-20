@@ -10,6 +10,9 @@ import subprocess
 import zipfile
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_file, Response
+from werkzeug.utils import secure_filename
+import uuid
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,8 +23,23 @@ app = Flask(__name__, template_folder='.')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 BASE_DIR    = os.environ.get("BASE_DIR", r"D:\model_train")
-OUTPUT_DIR  = os.environ.get("OUTPUT_DIR", r"D:\model_train\annotated_dataset")
+_current_dataset_name = "default"
+OUTPUT_DIR  = os.environ.get("OUTPUT_DIR", os.path.join(BASE_DIR, f"dataset_{_current_dataset_name}"))
 CONF_THRESH = float(os.environ.get("CONF_THRESH", "0.25"))
+
+VALID_SPLITS = {"train", "valid", "test"}
+
+def validate_split(split):
+    if split not in VALID_SPLITS:
+        raise ValueError("Invalid split")
+
+def secure_path(base_dir, *paths):
+    """Safely join paths and ensure the result is within base_dir."""
+    final_path = os.path.abspath(os.path.join(base_dir, *paths))
+    base_abs = os.path.abspath(base_dir)
+    if not final_path.startswith(base_abs):
+        raise ValueError("Path traversal attempt detected")
+    return final_path
 IMG_EXTS    = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
 # Supported inference model formats
 MODEL_EXTS  = {'.pt', '.onnx', '.engine', '.tflite', '.torchscript'}
@@ -88,6 +106,22 @@ _preanno_queue  = None   # queue.Queue
 _preanno_thread = None
 
 DB_PATH = os.path.join(OUTPUT_DIR, "state.db")
+_current_session_id = uuid.uuid4().hex
+
+def set_active_dataset(src_dir):
+    global OUTPUT_DIR, DB_PATH, _current_session_id, _current_dataset_name
+    base = os.path.basename(os.path.normpath(src_dir))
+    safe_name = secure_filename(base)
+    if not safe_name:
+        safe_name = "default"
+    
+    _current_dataset_name = safe_name
+    OUTPUT_DIR = os.path.join(BASE_DIR, f"dataset_{safe_name}")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    DB_PATH = os.path.join(OUTPUT_DIR, "state.db")
+    init_db()
+    _current_session_id = uuid.uuid4().hex
 
 
 # ─── DATABASE ────────────────────────────────────────────────────────────────
@@ -115,6 +149,18 @@ def init_db():
             value TEXT
         )
     """)
+    
+    # Deduplicate before applying the unique index
+    conn.execute("""
+        DELETE FROM images 
+        WHERE id NOT IN (
+            SELECT MIN(id) 
+            FROM images 
+            GROUP BY name, split
+        )
+    """)
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_images_name_split ON images(name, split)")
+    
     conn.commit()
     conn.close()
 
