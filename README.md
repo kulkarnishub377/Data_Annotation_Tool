@@ -37,8 +37,30 @@ Data_annotrator_tool/
 ### Prerequisites
 *   **Python 3.8+**
 *   **Modern Web Browser** (Chrome / Edge / Firefox recommended)
+*   **Git** (for cloning the repository)
 
-### 1. Install Dependencies
+### 1. Clone the Repository
+
+Clone the project to your local machine:
+
+```bash
+git clone https://github.com/kulkarnishub377/Data_annotrator_tool.git
+cd Data_annotrator_tool
+```
+
+### 2. Create a Virtual Environment (Recommended)
+
+Keep your global Python environment clean by using a virtual environment:
+
+```bash
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
 
 Install the required Python packages:
 
@@ -47,9 +69,9 @@ pip install flask ultralytics pillow
 ```
 > *Note: `pillow` is strictly required for generating optimized, heavily cached thumbnails in the Grid View.*
 
-### 2. Configuration
+### 4. Configuration
 
-Open `app.py` and modify the paths at the top of the file to match your environment:
+Open `app.py` and modify the paths at the top of the file to point to your local directories:
 
 ```python
 BASE_DIR   = r"D:\model_train"                  # Root directory containing raw image folders
@@ -58,10 +80,9 @@ OUTPUT_DIR = r"D:\model_train\annotated_dataset" # Directory where the finalized
 
 ## 🚦 Running the Application
 
-Start the Flask server from your terminal:
+With your virtual environment activated, start the Flask server:
 
 ```bash
-cd D:\model_train\Data_annotrator_tool
 python app.py
 ```
 
@@ -73,7 +94,7 @@ Then, open your browser and navigate to: **[http://127.0.0.1:8051](http://127.0.
 2.  **Ingest Images**: Select a source folder and click "Load Images". Hardlinking prevents duplicating image data on your drive.
 3.  **Review & Annotate**: YOLO will pre-annotate images in the background. Use the draw mode, hotkeys, and brightness adjustments to perfect your dataset.
 4.  **Auto-Split Dataset**: Check the real-time Class Distribution chart, configure your Train/Valid/Test ratios, and execute "Auto-Split Dataset".
-5.  **Train Model**: Go to the Training panel, adjust hyperparameters, and click "Start Training". Watch the live CLI logs stream directly into your browser.
+5.  **Train Model**: Go to the Training panel, adjust hyperparameters, and click "Start Training". Watch the live CLI logs stream directly into your browser. *(Note: This works perfectly with old custom models, allowing you to easily fine-tune them on entirely new datasets!)*
 6.  **Export**: Return to the Grid View and click "Export Dataset" to download the finalized `.zip` package.
 
 ## ⌨️ Essential Keyboard Shortcuts
