@@ -36,9 +36,9 @@ def validate_split(split):
 
 def secure_path(base_dir, *paths):
     """Safely join paths and ensure the result is within base_dir."""
-    final_path = os.path.abspath(os.path.join(base_dir, *paths))
     base_abs = os.path.abspath(base_dir)
-    if not final_path.startswith(base_abs):
+    final_path = os.path.abspath(os.path.join(base_abs, *paths))
+    if os.path.commonpath([base_abs, final_path]) != base_abs:
         raise ValueError("Path traversal attempt detected")
     return final_path
 IMG_EXTS    = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
@@ -94,7 +94,7 @@ _class_names  = ['auto_rickshaw', 'bike', 'bus', 'car', 'mini_bus', 'tractor', '
 
 # ─── GLOBALS ─────────────────────────────────────────────────────────────────
 _model               = None
-_model_lock          = threading.Lock()
+_model_lock          = threading.RLock()
 _annotate_locks      = {}
 _annotate_meta_lock  = threading.Lock()
 _job_progress        = {}   # job_id -> dict
@@ -565,6 +565,11 @@ def api_ingest_append():
     data = request.get_json()
     src  = data.get("source_dir", "")
     target_split = data.get("split", "train")
+    try:
+        validate_split(target_split)
+    except ValueError:
+        return jsonify({"error": "Invalid split"}), 400
+
     if not src or not os.path.isdir(src):
         return jsonify({"error": "invalid source dir"}), 400
 
@@ -607,7 +612,13 @@ def api_auto_split():
     data   = request.get_json()
     ratios = data.get("ratios", [0.70, 0.20, 0.10])
     
-    if len(ratios) != 3 or any(r < 0 or r > 1 for r in ratios) or not (0.99 <= sum(ratios) <= 1.01):
+    if (
+        not isinstance(ratios, list)
+        or len(ratios) != 3
+        or not all(isinstance(r, (int, float)) for r in ratios)
+        or any(r < 0 or r > 1 for r in ratios)
+        or abs(sum(ratios) - 1.0) > 0.001
+    ):
         return jsonify({"error": "Invalid ratios. Must be exactly 3 numbers between 0 and 1 that sum to 1."}), 400
 
     all_entries = db_all_entries()
