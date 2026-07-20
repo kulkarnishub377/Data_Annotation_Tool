@@ -28,13 +28,13 @@ venv/
 *.db
 *.sqlite3
 
-# YOLO / ML
+# YOLO / ML Models
 runs/
-yolov8n.pt
-yolov8s.pt
-yolov8m.pt
-yolov8l.pt
-yolov8x.pt
+*.pt
+*.onnx
+*.engine
+*.tflite
+*.torchscript
 
 # Output directories
 annotated_dataset/
@@ -43,3 +43,11 @@ vedio/
 # OS
 .DS_Store
 Thumbs.db
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.webp
+*.mp4   
