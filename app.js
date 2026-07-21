@@ -114,6 +114,18 @@ async function initSetup() {
         devEl.innerHTML = `<span style="color:#f59e0b;">⚡ No GPU detected — will use CPU for inference</span>`;
     }
 
+    // Load existing datasets
+    const extDirs = await fetch("/api/existing_datasets").then(r => r.json());
+    const extSel = document.getElementById("existing-dataset-select");
+    extSel.innerHTML = '<option value="">— choose existing dataset —</option>';
+    extDirs.forEach(d => {
+        const o = document.createElement("option"); o.value = d.path;
+        o.textContent = d.name; extSel.appendChild(o);
+    });
+    extSel.addEventListener("change", () => {
+        document.getElementById("btn-load-existing").disabled = !extSel.value;
+    });
+
     // Load source dirs
     const dirs = await fetch("/api/source_dirs").then(r => r.json());
     const sel = document.getElementById("src-select");
@@ -216,6 +228,27 @@ document.getElementById("btn-goto-setup").addEventListener("click", () => {
     document.getElementById("app").style.display = "none";
     document.getElementById("setup-screen").classList.remove("hidden");
     initSetup();
+});
+
+document.getElementById("btn-load-existing").addEventListener("click", async () => {
+    const src = document.getElementById("existing-dataset-select").value;
+    if (!src) return;
+    document.getElementById("btn-load-existing").disabled = true;
+    document.getElementById("btn-load-existing").innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
+    
+    const res = await fetch("/api/load_existing_dataset", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataset_dir: src })
+    });
+    
+    if (res.ok) {
+        openAnnotator();
+    } else {
+        const err = await res.json();
+        showToast("❌ Error: " + err.error, true);
+        document.getElementById("btn-load-existing").disabled = false;
+        document.getElementById("btn-load-existing").innerHTML = `<i class="fa-solid fa-folder-open"></i> Open Selected Dataset`;
+    }
 });
 
 document.getElementById("btn-ingest").addEventListener("click", async () => {

@@ -109,16 +109,21 @@ _preanno_thread = None
 DB_PATH = os.path.join(OUTPUT_DIR, "state.db")
 _current_session_id = uuid.uuid4().hex
 
-def set_active_dataset(src_dir):
+def set_active_dataset(src_dir, is_existing=False):
     global OUTPUT_DIR, DB_PATH, _current_session_id, _current_dataset_name
-    base = os.path.basename(os.path.normpath(src_dir))
-    safe_name = secure_filename(base)
-    if not safe_name:
-        safe_name = "default"
     
-    _current_dataset_name = safe_name
-    OUTPUT_DIR = os.path.join(BASE_DIR, f"dataset_{safe_name}")
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    if is_existing:
+        OUTPUT_DIR = src_dir
+        _current_dataset_name = os.path.basename(os.path.normpath(src_dir))
+    else:
+        base = os.path.basename(os.path.normpath(src_dir))
+        safe_name = secure_filename(base)
+        if not safe_name:
+            safe_name = "default"
+        
+        _current_dataset_name = safe_name
+        OUTPUT_DIR = os.path.join(BASE_DIR, f"dataset_{safe_name}")
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     DB_PATH = os.path.join(OUTPUT_DIR, "state.db")
     init_db()
@@ -489,6 +494,33 @@ def api_class_stats():
 @app.route("/api/source_dirs")
 def api_source_dirs():
     return jsonify(get_image_dirs())
+
+
+# ─── API: EXISTING DATASETS ──────────────────────────────────────────────────
+@app.route("/api/existing_datasets")
+def api_existing_datasets():
+    result = []
+    for name in sorted(os.listdir(BASE_DIR)):
+        if name.startswith('.'):
+            continue
+        full = os.path.join(BASE_DIR, name)
+        if os.path.isdir(full) and os.path.exists(os.path.join(full, "state.db")):
+            result.append({"name": name, "path": full})
+    return jsonify(result)
+
+
+@app.route("/api/load_existing_dataset", methods=["POST"])
+def api_load_existing_dataset():
+    data = request.get_json()
+    dataset_dir = data.get("dataset_dir", "")
+    if not dataset_dir or not os.path.isdir(dataset_dir):
+        return jsonify({"error": "invalid directory"}), 400
+    
+    if not os.path.exists(os.path.join(dataset_dir, "state.db")):
+        return jsonify({"error": "state.db not found"}), 400
+
+    set_active_dataset(dataset_dir, is_existing=True)
+    return jsonify({"status": "ok"})
 
 
 # ─── API: DATASET STATE ──────────────────────────────────────────────────────

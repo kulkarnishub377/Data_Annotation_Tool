@@ -60,7 +60,15 @@
 
       <div class="divider"></div>
 
-      <div class="field-label" style="margin-top:4px;">Source Folder</div>
+      <div class="field-label" style="margin-top:4px;">Open Existing Dataset</div>
+      <select id="existing-dataset-select" class="field-select" style="margin-bottom:10px;">
+        <option value="">Loading…</option>
+      </select>
+      <button class="btn btn-green btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Selected Dataset</button>
+
+      <div class="divider"></div>
+
+      <div class="field-label" style="margin-top:4px;">Source Folder (Create New Dataset)</div>
       <select id="src-select" class="field-select" style="margin-bottom:10px;">
         <option value="">Loading…</option>
       </select>
