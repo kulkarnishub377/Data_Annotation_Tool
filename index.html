@@ -19,83 +19,79 @@
 <body>
 
   <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
-  <div id="setup-screen" class="screen">
-    <div class="card">
-      <div class="card-title" style="margin-bottom: 12px; font-size: 20px;">
-        <div class="logo-icon" style="width: 28px; height: 28px;"><i class="fa-solid fa-object-group"
-            style="color: white; font-size: 14px;"></i></div>
-        <span class="logo-text">Data Annotation Tool</span>
-      </div>
-      <div class="card-sub">Pick a model → classes load automatically → choose source folder → annotate</div>
+  <div id="setup-screen" class="screen setup-modern">
+    <div class="setup-header">
+      <div class="logo-icon-lg"><i class="fa-solid fa-object-group"></i></div>
+      <h1>Data Annotation Tool</h1>
+      <p>Professional Computer Vision Workflows</p>
+    </div>
 
-      <!-- Existing dataset banner -->
-      <div id="existing-banner" class="banner banner-green" style="display:none;">
-        <span id="existing-text">Dataset found</span>
-        <button class="btn btn-green" id="btn-open">Open Annotator →</button>
-      </div>
-
-      <!-- Model selection row (auto-detects device) -->
-      <div class="field-label">Model File <span
-          style="color:#374151;font-weight:400;text-transform:none;font-size:11px;">(.pt / .onnx / .engine /
-          .tflite)</span></div>
-      <select id="model-select" class="field-select" style="margin-bottom:8px;">
-        <option value="">Loading…</option>
-      </select>
-
-      <div class="field-label">Target Inference Device</div>
-      <select id="device-select" class="field-select" style="margin-bottom:10px;">
-        <option value="auto">Auto-Detect (Recommended)</option>
-        <option value="cpu">CPU</option>
-        <option value="0">GPU 0 (CUDA)</option>
-        <option value="mps">Apple MPS</option>
-      </select>
-      <div id="device-autodetect" style="font-size:11px;color:#475569;margin-bottom:10px;">⏳ Detecting devices…</div>
-      <button class="btn btn-purple btn-full" id="btn-load-model" style="margin-bottom:14px;"><i
-          class="fa-solid fa-bolt"></i> Load Model & Extract
-        Classes</button>
-      <div id="classes-preview" style="display:none;margin-bottom:16px;">
-        <div class="field-label">Detected Classes</div>
-        <div id="classes-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;"></div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field-label" style="margin-top:4px;">Open Existing Dataset</div>
-      <select id="existing-dataset-select" class="field-select" style="margin-bottom:10px;">
-        <option value="">Loading…</option>
-      </select>
-      <button class="btn btn-green btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Selected Dataset</button>
-
-      <div class="divider"></div>
-
-      <div class="field-label" style="margin-top:4px;">Source Folder (Create New Dataset)</div>
-      <select id="src-select" class="field-select" style="margin-bottom:10px;">
-        <option value="">Loading…</option>
-      </select>
-      <div id="img-badge" style="margin-bottom:14px;display:none;"></div>
-
-      <div class="field-label">Split Ratio <span
-          style="color:#374151;font-weight:400;text-transform:none;font-size:11px;">(for annotated images during
-          Auto-Split)</span></div>
-      <div class="ratio-row">
-        <div class="ratio-col"><label>Train %</label><input type="number" id="r-train" value="70" min="1" max="98" />
-        </div>
-        <div class="ratio-col"><label>Valid %</label><input type="number" id="r-valid" value="20" min="1" max="98" />
-        </div>
-        <div class="ratio-col"><label>Test %</label><input type="number" id="r-test" value="10" min="1" max="98" />
+    <div class="setup-grid">
+      <!-- Column 1: Model Setup -->
+      <div class="glass-card">
+        <div class="card-step">1</div>
+        <h2>Model Configuration</h2>
+        <p class="card-desc">Load your YOLO model to automatically extract classes and configure inference.</p>
+        
+        <div class="field-label">Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
+        <select id="model-select" class="field-select glass-input"></select>
+        
+        <div class="field-label">Inference Device</div>
+        <select id="device-select" class="field-select glass-input">
+          <option value="auto">Auto-Detect (Recommended)</option>
+          <option value="cpu">CPU</option>
+          <option value="0">GPU 0 (CUDA)</option>
+          <option value="mps">Apple MPS</option>
+        </select>
+        <div id="device-autodetect" class="device-status">⏳ Detecting devices…</div>
+        
+        <button class="btn btn-purple btn-glow btn-full" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load Model</button>
+        
+        <div id="classes-preview" style="display:none; margin-top: 15px;">
+          <div class="field-label">Detected Classes</div>
+          <div id="classes-tags" class="class-tags-container"></div>
         </div>
       </div>
 
-      <button class="btn btn-primary btn-full" id="btn-ingest" disabled><i class="fa-solid fa-download"></i> Load Images
-        into Train Folder</button>
-
-      <div class="prog-wrap" id="ingest-prog">
-        <div class="prog-header"><span id="ip-label">Linking images…</span><span id="ip-num">0 / 0</span></div>
-        <div class="prog-track">
-          <div class="prog-bar" id="ip-bar"></div>
+      <!-- Column 2: Dataset Setup -->
+      <div class="glass-card">
+        <div class="card-step">2</div>
+        <h2>Dataset Management</h2>
+        
+        <div class="dataset-section">
+          <div class="field-label">Open Existing Dataset</div>
+          <select id="existing-dataset-select" class="field-select glass-input"></select>
+          <button class="btn btn-green btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
         </div>
-        <div class="prog-status" id="ip-status"></div>
+        
+        <div class="divider-text"><span>OR</span></div>
+        
+        <div class="dataset-section">
+          <div class="field-label">Create New Dataset (Select Source)</div>
+          <select id="src-select" class="field-select glass-input"></select>
+          <div id="img-badge" style="margin-bottom:14px;display:none;"></div>
+          
+          <div class="field-label">Split Ratio <span class="hint">(Train / Valid / Test)</span></div>
+          <div class="ratio-row glass-ratios">
+            <div class="ratio-col"><label>T %</label><input type="number" id="r-train" value="70" min="1" max="98" /></div>
+            <div class="ratio-col"><label>V %</label><input type="number" id="r-valid" value="20" min="1" max="98" /></div>
+            <div class="ratio-col"><label>Ts %</label><input type="number" id="r-test" value="10" min="1" max="98" /></div>
+          </div>
+          
+          <button class="btn btn-primary btn-glow btn-full" id="btn-ingest" disabled><i class="fa-solid fa-download"></i> Ingest Images</button>
+          
+          <div class="prog-wrap glass-prog" id="ingest-prog">
+            <div class="prog-header"><span id="ip-label">Linking images…</span><span id="ip-num">0 / 0</span></div>
+            <div class="prog-track"><div class="prog-bar" id="ip-bar"></div></div>
+            <div class="prog-status" id="ip-status"></div>
+          </div>
+        </div>
       </div>
+    </div>
+    
+    <div id="existing-banner" class="glass-banner" style="display:none;">
+      <span id="existing-text">Dataset found</span>
+      <button class="btn btn-green" id="btn-open">Open Annotator →</button>
     </div>
   </div>
 

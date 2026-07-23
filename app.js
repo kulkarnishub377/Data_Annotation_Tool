@@ -26,20 +26,56 @@ setInterval(() => {
     if (el) el.textContent = `${mm}:${ss}`;
 }, 1000);
 
-// Undo stack (max 20 steps)
-let _undoStack = [];
-const MAX_UNDO = 20;
+// Undo/Redo Stack (Command Pattern)
+class StateSnapshotCommand {
+    constructor(prevBoxes, newBoxes) {
+        this.prevBoxes = JSON.parse(JSON.stringify(prevBoxes));
+        this.newBoxes = JSON.parse(JSON.stringify(newBoxes));
+    }
+    execute() { boxes = JSON.parse(JSON.stringify(this.newBoxes)); }
+    undo() { boxes = JSON.parse(JSON.stringify(this.prevBoxes)); }
+}
+
+class CommandManager {
+    constructor() { this.undoStack = []; this.redoStack = []; this.maxHistory = 50; }
+    pushState(prevBoxes, newBoxes) {
+        if (JSON.stringify(prevBoxes) === JSON.stringify(newBoxes)) return;
+        this.undoStack.push(new StateSnapshotCommand(prevBoxes, newBoxes));
+        if (this.undoStack.length > this.maxHistory) this.undoStack.shift();
+        this.redoStack = [];
+    }
+    undo() {
+        if (this.undoStack.length === 0) return;
+        const cmd = this.undoStack.pop();
+        cmd.undo();
+        this.redoStack.push(cmd);
+        selectedBox = -1; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        showToast("↩ Undo");
+    }
+    redo() {
+        if (this.redoStack.length === 0) return;
+        const cmd = this.redoStack.pop();
+        cmd.execute();
+        this.undoStack.push(cmd);
+        selectedBox = -1; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        showToast("↪ Redo");
+    }
+    clear() { this.undoStack = []; this.redoStack = []; }
+}
+const cmdManager = new CommandManager();
+
+let _pendingUndoState = null;
 function pushUndo() {
-    _undoStack.push(JSON.parse(JSON.stringify(boxes)));
-    if (_undoStack.length > MAX_UNDO) _undoStack.shift();
+    _pendingUndoState = JSON.parse(JSON.stringify(boxes));
 }
-function doUndo() {
-    if (_undoStack.length === 0) return;
-    boxes = _undoStack.pop();
-    selectedBox = -1; dirty = true;
-    updateBoxPanel(); renderCanvas();
-    showToast("↩ Undo");
+function commitUndo() {
+    if (_pendingUndoState) {
+        cmdManager.pushState(_pendingUndoState, boxes);
+        _pendingUndoState = null;
+    }
 }
+function doUndo() { cmdManager.undo(); }
+function doRedo() { cmdManager.redo(); }
 
 // Canvas
 const canvas = document.getElementById("annot-canvas");
@@ -526,6 +562,7 @@ canvas.addEventListener("mouseup", e => {
             n.y = Math.max(n.h / 2, Math.min(1 - n.h / 2, n.y));
             pushUndo();
             boxes.push({ id: boxes.length, cls: 0, ...n });
+            commitUndo();
             selectedBox = boxes.length - 1; dirty = true;
             // Show inline popup
             showClassPopup(drag.ds.x, drag.ds.y, x, y);
@@ -533,6 +570,7 @@ canvas.addEventListener("mouseup", e => {
         setDrawMode(false);
     } else {
         triggerAutoSave();
+        commitUndo();
     }
     drag = { on: false }; updateBoxPanel(); renderCanvas();
 });
@@ -582,7 +620,9 @@ document.getElementById("popup-confirm").addEventListener("click", () => {
 
 document.getElementById("popup-cancel").addEventListener("click", () => {
     if (boxes.length > 0) {
+        pushUndo();
         boxes.splice(selectedBox, 1);
+        commitUndo();
         selectedBox = Math.max(-1, boxes.length - 1);
     }
     document.getElementById("class-popup").style.display = "none";
@@ -624,13 +664,17 @@ window.addEventListener("keydown", e => {
     if (e.key === "ArrowRight" || e.key === "n") navigateTo(currentIndex + 1);
     if (e.key === "ArrowLeft" || e.key === "p") navigateTo(currentIndex - 1);
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveAnnotations(); }
-    if (e.key === "z" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); doUndo(); }
+    if (e.key === "z" && (e.ctrlKey || e.metaKey)) { 
+        e.preventDefault(); 
+        if (e.shiftKey) { doRedo(); } else { doUndo(); } 
+    }
+    if (e.key === "y" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); doRedo(); }
     if (e.key === "d") setDrawMode(!drawMode);
     if (e.key === "f") fitView();
     if (e.key === "=" || e.key === "+") { zoomScale = Math.min(20, zoomScale * 1.2); renderCanvas(); }
     if (e.key === "-") { zoomScale = Math.max(0.2, zoomScale / 1.2); renderCanvas(); }
     if (e.key === "Enter") saveAndNext();
-    if ((e.key === "Delete" || e.key === "Backspace") && selectedBox >= 0) { pushUndo(); deleteBox(selectedBox); }
+    if ((e.key === "Delete" || e.key === "Backspace") && selectedBox >= 0) { pushUndo(); deleteBox(selectedBox); commitUndo(); }
 
     // Number keys 1-9 → set class of selected box
     const num = parseInt(e.key);
@@ -638,6 +682,7 @@ window.addEventListener("keydown", e => {
         pushUndo();
         boxes[selectedBox].cls = num - 1;
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        commitUndo();
     }
 
     // Q/E Class Cycling Hotkeys
@@ -645,11 +690,13 @@ window.addEventListener("keydown", e => {
         pushUndo();
         boxes[selectedBox].cls = (boxes[selectedBox].cls + 1) % CLASS_NAMES.length;
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        commitUndo();
     }
     if (e.key === "q" && selectedBox >= 0) {
         pushUndo();
         boxes[selectedBox].cls = (boxes[selectedBox].cls - 1 + CLASS_NAMES.length) % CLASS_NAMES.length;
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        commitUndo();
     }
 });
 
@@ -699,7 +746,7 @@ async function loadImage(filename) {
     const myId = ++_loadId;
     _imgReady = false; _labelsReady = false;
     boxes = []; selectedBox = -1; dirty = false;
-    _undoStack = [];
+    cmdManager.clear();
     zoomScale = 1.0; panX = 0; panY = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     showLoading("Auto-annotating…");
