@@ -20,7 +20,8 @@
 
   <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
   <div id="setup-screen" class="screen setup-modern">
-    <div class="setup-header">
+    <div class="setup-header" style="position: relative; max-width: 900px; width: 100%;">
+      <button class="btn btn-secondary btn-glow" id="btn-help-setup" style="position: absolute; right: 0; top: 0; border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-question"></i></button>
       <div class="logo-icon-lg"><i class="fa-solid fa-object-group"></i></div>
       <h1>Data Annotation Tool</h1>
       <p>Professional Computer Vision Workflows</p>
@@ -437,6 +438,51 @@
       </div>
     </div>
   </div>
+
+  <!-- HELP MODAL -->
+  <div id="help-modal" class="screen" style="display: none; z-index: 300;">
+    <div class="card glass-card" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <span><i class="fa-solid fa-circle-question" style="color: #3b82f6;"></i> Help & Shortcuts</span>
+        <button class="im-close" id="help-close" onclick="document.getElementById('help-modal').style.display='none'" style="position: static; font-size: 24px;">&times;</button>
+      </div>
+      
+      <h3 style="color: #fff; margin-bottom: 10px; font-size: 16px;">🔄 End-to-End Workflow</h3>
+      <ol style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-left: 20px; margin-bottom: 20px;">
+        <li><b>Select Model</b>: Pick any supported model file (.pt, .onnx, etc.). The tool auto-detects your GPU and extracts model classes.</li>
+        <li><b>Ingest Images</b>: Select a source folder and click "Load Images". Hardlinking prevents duplicating image data.</li>
+        <li><b>Review & Annotate</b>: YOLO will pre-annotate images in the background. Use the draw mode and hotkeys to perfect your dataset.</li>
+        <li><b>Auto-Split Dataset</b>: Configure your Train/Valid/Test ratios and execute "Auto-Split Dataset".</li>
+        <li><b>Train Model</b>: Go to the Training panel, adjust hyperparameters, and click "Start Training".</li>
+        <li><b>Export</b>: Return to the Grid View and click "Export Dataset" to download the finalized package.</li>
+      </ol>
+      
+      <h3 style="color: #fff; margin-bottom: 10px; font-size: 16px;">⌨️ Essential Keyboard Shortcuts</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+          <ul style="list-style: none; color: #94a3b8; font-size: 13px; line-height: 1.8;">
+            <li><span class="hk">D</span> Toggle Draw mode</li>
+            <li><span class="hk">F</span> Fit image to screen</li>
+            <li><span class="hk">C</span> Copy boxes from previous</li>
+            <li><span class="hk">J</span> Jump to next unannotated</li>
+            <li><span class="hk">Q</span> / <span class="hk">E</span> Cycle box class</li>
+            <li><span class="hk">1</span> - <span class="hk">9</span> Set class 1-9</li>
+          </ul>
+        </div>
+        <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+          <ul style="list-style: none; color: #94a3b8; font-size: 13px; line-height: 1.8;">
+            <li><span class="hk">←</span> / <span class="hk">→</span> Prev / Next image</li>
+            <li><span class="hk">Enter</span> Save & jump to next</li>
+            <li><span class="hk">Del</span> Delete selected box</li>
+            <li><span class="hk">Ctrl+Z</span> / <span class="hk">Y</span> Undo / Redo</li>
+            <li><span class="hk">Wheel</span> Zoom in/out</li>
+            <li><span class="hk">Mid-drag</span> Pan canvas</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 

@@ -575,6 +575,16 @@ canvas.addEventListener("mouseup", e => {
     drag = { on: false }; updateBoxPanel(); renderCanvas();
 });
 
+// Help Modal
+document.getElementById("btn-help-setup")?.addEventListener("click", () => {
+    document.getElementById("help-modal").style.display = "flex";
+});
+document.getElementById("help-modal")?.addEventListener("click", (e) => {
+    if (e.target.id === "help-modal") {
+        document.getElementById("help-modal").style.display = "none";
+    }
+});
+
 canvas.addEventListener("mouseenter", () => { isMouseInCanvas = true; });
 canvas.addEventListener("mouseleave", () => { drag.on = false; isPanning = false; _crossX = -1; _crossY = -1; isMouseInCanvas = false; renderCanvas(); });
 window.addEventListener("resize", () => { if (imgEl.src) fitView(); });
