@@ -35,7 +35,7 @@ A complete, professional-grade, end-to-end web application for auto-annotating v
 ## 📂 Directory Structure
 
 ```text
-Data_annotrator_tool/
+Data_Annotation_Tool/
 ├── app.py              # Backend server (Flask, YOLO inference, SQLite state, Threads)
 ├── app.js              # Core frontend logic (Canvas math, SSE listeners, API calls)
 ├── index.html          # Frontend UI (Data Annotation Tool markup)
@@ -61,8 +61,8 @@ Data_annotrator_tool/
 Clone the project to your local machine:
 
 ```bash
-git clone https://github.com/kulkarnishub377/Data_annotrator_tool.git
-cd Data_annotrator_tool
+git clone https://github.com/kulkarnishub377/Data_Annotation_Tool.git
+cd Data_Annotation_Tool
 ```
 
 ### 2. Create a Virtual Environment (Recommended)
