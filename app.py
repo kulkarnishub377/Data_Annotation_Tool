@@ -556,8 +556,7 @@ def api_set_model():
             new_path = candidate_models
         elif os.path.exists(candidate_base):
             new_path = candidate_base
-        else:
-            return jsonify({"error": f"Model not found: {new_path}"}), 400
+        # If it doesn't exist locally, we leave it as new_path to allow Ultralytics to auto-download it from the internet.
 
     ext = Path(new_path).suffix.lower() if new_path else ""
     if new_path and ext not in MODEL_EXTS:
