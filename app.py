@@ -875,19 +875,37 @@ def api_images():
 
 
 # ─── API: DATASET PAGE (for Grid View) ───────────────────────────────────────
-@app.route("/api/dataset_page")
+@app.route("/api/dataset_page", methods=["GET", "POST"])
 def api_dataset_page():
-    split = request.args.get("split", "train")
-    page = int(request.args.get("page", 1))
-    limit = int(request.args.get("limit", 50))
-    filt = request.args.get("filter", "all")  # 'all', 'done', 'pending'
-    class_id_str = request.args.get("class_id", "")
+    if request.method == "POST":
+        data = request.json or {}
+        split = data.get("split", "train")
+        page = int(data.get("page", 1))
+        limit = int(data.get("limit", 50))
+        filt = data.get("filter", "all")
+        class_id_str = str(data.get("class_id", ""))
+        filter_files = data.get("filter_files", None) # list of filenames
+    else:
+        split = request.args.get("split", "train")
+        page = int(request.args.get("page", 1))
+        limit = int(request.args.get("limit", 50))
+        filt = request.args.get("filter", "all")
+        class_id_str = request.args.get("class_id", "")
+        filter_files = None
+
     class_id = int(class_id_str) if class_id_str.isdigit() else -1
 
     entries = db_get_entries(split)
     
     filtered = []
+    
+    # Precompute set for fast lookup if provided
+    ff_set = set(filter_files) if filter_files is not None else None
+    
     for e in entries:
+        if ff_set is not None and e["name"] not in ff_set:
+            continue
+            
         lbl_p = label_path(split, e["name"])
         is_annotated = os.path.exists(lbl_p)
         if filt == "done" and not is_annotated:
@@ -956,7 +974,102 @@ def api_dataset_page():
     })
 
 
-# ─── API: SERVE IMAGE ────────────────────────────────────────────────────────
+# ─── API: DATASET HEALTH ─────────────────────────────────────────────────────
+@app.route("/api/dataset_health")
+def api_dataset_health():
+    """
+    Scans the state.db and checks label files for:
+    - Empty images (no boxes)
+    - Corrupt images (0 bytes or missing)
+    - Very small boxes (w*h < 0.001)
+    - Out of bounds boxes (x,y,w,h outside 0-1)
+    """
+    c = get_db()
+    splits = ["train", "valid", "test"]
+    stats = {
+        "total_images": 0,
+        "total_boxes": 0,
+        "empty_images": {"count": 0, "files": []},
+        "corrupt_images": {"count": 0, "files": []},
+        "small_boxes": {"count": 0, "files": []},
+        "oob_boxes": {"count": 0, "files": []},
+        "classes": {}
+    }
+    
+    for split in splits:
+        cursor = c.execute("SELECT name FROM images WHERE split=?", (split,))
+        for row in cursor.fetchall():
+            name = row["name"]
+            stats["total_images"] += 1
+            
+            lbl_p = label_path(split, name)
+            annotated = os.path.exists(lbl_p)
+            
+            # Check for corrupt image
+            img_p = image_path(split, name)
+            if not os.path.exists(img_p) or os.path.getsize(img_p) == 0:
+                stats["corrupt_images"]["count"] += 1
+                stats["corrupt_images"]["files"].append(name)
+                continue
+                
+            if not annotated:
+                stats["empty_images"]["count"] += 1
+                stats["empty_images"]["files"].append(name)
+                continue
+                
+            # Check boxes
+            lbl_p = label_path(split, name)
+            if not os.path.exists(lbl_p):
+                stats["empty_images"]["count"] += 1
+                stats["empty_images"]["files"].append(name)
+                continue
+                
+            has_small = False
+            has_oob = False
+            
+            with open(lbl_p, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) >= 5:
+                        cls_id = int(parts[0])
+                        stats["classes"][cls_id] = stats["classes"].get(cls_id, 0) + 1
+                        stats["total_boxes"] += 1
+                        
+                        if len(parts) == 5:
+                            # BBox
+                            x, y, w, h = map(float, parts[1:5])
+                            if w * h < 0.0005:  # Very small
+                                has_small = True
+                            if (x - w/2) < -0.01 or (x + w/2) > 1.01 or (y - h/2) < -0.01 or (y + h/2) > 1.01:
+                                has_oob = True
+                        else:
+                            # Polygon
+                            for j in range(1, len(parts)):
+                                val = float(parts[j])
+                                if val < -0.01 or val > 1.01:
+                                    has_oob = True
+                                    
+            if has_small:
+                stats["small_boxes"]["count"] += 1
+                stats["small_boxes"]["files"].append(name)
+            if has_oob:
+                stats["oob_boxes"]["count"] += 1
+                stats["oob_boxes"]["files"].append(name)
+                
+            if os.path.getsize(lbl_p) == 0:
+                stats["empty_images"]["count"] += 1
+                stats["empty_images"]["files"].append(name)
+
+    # Health Score
+    score = 100
+    score -= (stats["corrupt_images"]["count"] / max(stats["total_images"], 1)) * 100 * 2  # Severe penalty
+    score -= (stats["empty_images"]["count"] / max(stats["total_images"], 1)) * 100 * 0.5  # Minor penalty
+    score -= (stats["small_boxes"]["count"] / max(stats["total_images"], 1)) * 100 * 1
+    score -= (stats["oob_boxes"]["count"] / max(stats["total_images"], 1)) * 100 * 1.5
+    
+    stats["score"] = max(0, min(100, int(score)))
+
+    return jsonify(stats)
 @app.route("/api/image/<split>/<filename>")
 def api_image(split, filename):
     dst = image_path(split, filename)
@@ -1276,6 +1389,94 @@ def api_export():
         return response
 
     return send_file(temp_path, download_name=f"{_current_dataset_name}_export_{fmt}.zip", as_attachment=True)
+
+
+# ─── API: DATASET VERSIONING ─────────────────────────────────────────────────
+@app.route("/api/versions", methods=["GET"])
+def api_get_versions():
+    versions_file = os.path.join(OUTPUT_DIR, "versions.json")
+    if not os.path.exists(versions_file):
+        return jsonify([])
+    try:
+        with open(versions_file, "r") as f:
+            return jsonify(json.load(f))
+    except Exception:
+        return jsonify([])
+
+@app.route("/api/versions", methods=["POST"])
+def api_create_version():
+    data = request.json or {}
+    message = data.get("message", "Auto snapshot")
+    
+    import datetime
+    import shutil
+    
+    version_id = "v_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    v_dir = os.path.join(OUTPUT_DIR, "versions", version_id)
+    os.makedirs(v_dir, exist_ok=True)
+    
+    # Copy DB
+    if os.path.exists(DB_PATH):
+        shutil.copy2(DB_PATH, os.path.join(v_dir, "state.db"))
+    
+    # Copy Labels
+    labels_dir = os.path.join(OUTPUT_DIR, "labels")
+    if os.path.exists(labels_dir):
+        shutil.copytree(labels_dir, os.path.join(v_dir, "labels"), dirs_exist_ok=True)
+        
+    # Update JSON
+    versions_file = os.path.join(OUTPUT_DIR, "versions.json")
+    versions = []
+    if os.path.exists(versions_file):
+        try:
+            with open(versions_file, "r") as f:
+                versions = json.load(f)
+        except Exception:
+            pass
+            
+    versions.insert(0, {
+        "id": version_id,
+        "message": message,
+        "timestamp": datetime.datetime.now().isoformat()
+    })
+    
+    with open(versions_file, "w") as f:
+        json.dump(versions, f)
+        
+    return jsonify({"success": True, "version_id": version_id})
+
+@app.route("/api/versions/<version_id>/restore", methods=["POST"])
+def api_restore_version(version_id):
+    import shutil
+    v_dir = os.path.join(OUTPUT_DIR, "versions", version_id)
+    if not os.path.exists(v_dir):
+        return jsonify({"error": "Version not found"}), 404
+        
+    # Move current to .backup (overwrite if exists)
+    backup_dir = os.path.join(OUTPUT_DIR, "versions", ".backup")
+    if os.path.exists(backup_dir):
+        shutil.rmtree(backup_dir)
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    if os.path.exists(DB_PATH):
+        shutil.copy2(DB_PATH, os.path.join(backup_dir, "state.db"))
+    labels_dir = os.path.join(OUTPUT_DIR, "labels")
+    if os.path.exists(labels_dir):
+        shutil.copytree(labels_dir, os.path.join(backup_dir, "labels"), dirs_exist_ok=True)
+        
+    # Delete current state
+    if os.path.exists(DB_PATH):
+        os.remove(DB_PATH)
+    if os.path.exists(labels_dir):
+        shutil.rmtree(labels_dir)
+        
+    # Copy from version snapshot
+    if os.path.exists(os.path.join(v_dir, "state.db")):
+        shutil.copy2(os.path.join(v_dir, "state.db"), DB_PATH)
+    if os.path.exists(os.path.join(v_dir, "labels")):
+        shutil.copytree(os.path.join(v_dir, "labels"), labels_dir, dirs_exist_ok=True)
+        
+    return jsonify({"success": True})
 
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────

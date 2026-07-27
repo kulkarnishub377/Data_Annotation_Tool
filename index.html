@@ -179,6 +179,8 @@
             <option value="">Any Class</option>
           </select>
           <button class="btn btn-secondary" onclick="loadGridPage(1)" style="padding:6px 12px;">Refresh</button>
+          <button class="btn btn-secondary" onclick="openHealthDashboard()" style="padding:6px 12px;"><i class="fa-solid fa-heart-pulse"></i> Dataset Health</button>
+          <button class="btn btn-secondary" onclick="openVersionsModal()" style="padding:6px 12px;"><i class="fa-solid fa-code-commit"></i> Snapshots</button>
           <select id="export-format" class="field-select" style="width:140px; padding:6px 10px;">
             <option value="yolo">YOLO Format</option>
             <option value="coco">COCO Format</option>
@@ -559,6 +561,62 @@
             <li><span class="hk">Mid-drag</span> Pan canvas</li>
           </ul>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEALTH DASHBOARD MODAL -->
+  <div class="modal-overlay" id="health-modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-heart-pulse"></i> Dataset Health Dashboard</h2>
+      <div id="health-loading" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> Scanning entire dataset...</div>
+      
+      <div id="health-results" style="display:none;">
+        <div style="display:flex; justify-content:space-between; background:#12151f; padding:12px; border-radius:6px; margin-bottom:12px;">
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Health Score</div>
+            <div id="health-score" style="font-size:32px; font-weight:800; color:#22c55e;">100</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Dataset Stats</div>
+            <div style="font-size:14px; font-weight:600; color:#e2e8f0; margin-top:4px;"><span id="health-total-imgs">0</span> Images</div>
+            <div style="font-size:14px; font-weight:600; color:#e2e8f0;"><span id="health-total-boxes">0</span> Annotations</div>
+          </div>
+        </div>
+
+        <h3 style="font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Anomaly Scan Results</h3>
+        
+        <div id="health-issues-list" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Dynamically populated rows -->
+        </div>
+
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn btn-primary" id="btn-health-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERSIONS MODAL -->
+  <div class="modal-overlay" id="versions-modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-code-commit"></i> Dataset Snapshots</h2>
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">Save the current state of your annotations and database. You can instantly restore these snapshots later if you make a mistake.</p>
+      
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <input type="text" id="version-msg" class="field-input" placeholder="Snapshot description (e.g., 'Finished 500 images')" style="flex:1;">
+        <button class="btn btn-primary" id="btn-save-version"><i class="fa-solid fa-floppy-disk"></i> Save Snapshot</button>
+      </div>
+
+      <h3 style="font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Saved Snapshots</h3>
+      
+      <div id="versions-list" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; padding-right:6px;">
+        <!-- Dynamically populated rows -->
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn btn-secondary" id="btn-versions-close">Close</button>
       </div>
     </div>
   </div>

@@ -42,7 +42,7 @@ class StateSnapshotCommand {
 }
 
 class CommandManager {
-    constructor() { this.undoStack = []; this.redoStack = []; this.maxHistory = 50; }
+    constructor() { this.undoStack = []; this.redoStack = []; this.maxHistory = 20; }
     pushState(prevBoxes, newBoxes, actionName) {
         if (JSON.stringify(prevBoxes) === JSON.stringify(newBoxes)) return;
         this.undoStack.push(new StateSnapshotCommand(prevBoxes, newBoxes, actionName));
@@ -1403,6 +1403,8 @@ async function setAppMode(mode) {
 
 
 
+let _healthFilterFiles = null; // Store files to filter from health dashboard
+
 async function loadGridPage(page) {
     if (page < 1) page = 1;
     const filter = document.getElementById("grid-filter").value;
@@ -1410,7 +1412,23 @@ async function loadGridPage(page) {
     const gridLimit = document.getElementById("grid-limit") ? parseInt(document.getElementById("grid-limit").value) : 50;
     showLoading("Loading grid...");
     try {
-        const res = await fetch(`/api/dataset_page?split=${currentSplit}&page=${page}&limit=${gridLimit}&filter=${filter}&class_id=${clsFilter}`).then(r => {
+        const bodyPayload = {
+            split: currentSplit,
+            page: page,
+            limit: gridLimit,
+            filter: filter,
+            class_id: clsFilter
+        };
+        
+        if (_healthFilterFiles !== null) {
+            bodyPayload.filter_files = _healthFilterFiles;
+        }
+
+        const res = await fetch("/api/dataset_page", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bodyPayload)
+        }).then(r => {
             if (!r.ok) throw new Error("API returned " + r.status);
             return r.json();
         });
@@ -1487,8 +1505,8 @@ async function loadGridPage(page) {
     }
 }
 
-document.getElementById("grid-filter").addEventListener("change", () => loadGridPage(1));
-document.getElementById("grid-class-filter").addEventListener("change", () => loadGridPage(1));
+document.getElementById("grid-filter").addEventListener("change", () => { _healthFilterFiles = null; loadGridPage(1); });
+document.getElementById("grid-class-filter").addEventListener("change", () => { _healthFilterFiles = null; loadGridPage(1); });
 
 function openImageModal(imgData) {
     document.getElementById("image-modal").style.display = "flex";
@@ -1753,3 +1771,198 @@ document.getElementById("btn-export-dataset")?.addEventListener("click", () => {
         btn.innerHTML = oldText;
     }, 4000);
 });
+
+// ─── HEALTH DASHBOARD ────────────────────────────────────────────────────────
+async function openHealthDashboard() {
+    const modal = document.getElementById("health-modal");
+    const loading = document.getElementById("health-loading");
+    const results = document.getElementById("health-results");
+    
+    modal.style.display = "flex";
+    loading.style.display = "block";
+    results.style.display = "none";
+    
+    try {
+        const data = await fetch("/api/dataset_health").then(r => r.json());
+        
+        loading.style.display = "none";
+        results.style.display = "block";
+        
+        document.getElementById("health-score").textContent = data.score;
+        document.getElementById("health-score").style.color = data.score > 90 ? "#22c55e" : data.score > 70 ? "#eab308" : "#ef4444";
+        document.getElementById("health-total-imgs").textContent = data.total_images;
+        document.getElementById("health-total-boxes").textContent = data.total_boxes;
+        
+        const list = document.getElementById("health-issues-list");
+        list.innerHTML = "";
+        
+        const addIssue = (title, count, icon, color, desc, files = []) => {
+            const div = document.createElement("div");
+            div.style.background = "#1a1d27";
+            div.style.padding = "10px";
+            div.style.borderRadius = "6px";
+            div.style.display = "flex";
+            div.style.justifyContent = "space-between";
+            div.style.alignItems = "center";
+            div.style.borderLeft = `4px solid ${color}`;
+            
+            if (count > 0 && files.length > 0) {
+                div.style.cursor = "pointer";
+                div.title = "Click to filter Grid View to these images";
+                div.onmouseover = () => div.style.background = "#2a2d39";
+                div.onmouseout = () => div.style.background = "#1a1d27";
+                div.onclick = () => {
+                    _healthFilterFiles = files;
+                    document.getElementById("health-modal").style.display = "none";
+                    loadGridPage(1);
+                    showToast(`🔍 Filtering to ${files.length} affected images`);
+                };
+            }
+            
+            div.innerHTML = `
+                <div>
+                    <div style="font-weight:700; font-size:13px; color:#e2e8f0;"><i class="${icon}" style="color:${color}; margin-right:6px;"></i> ${title}</div>
+                    <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${desc}</div>
+                </div>
+                <div style="font-weight:800; font-size:16px; color:${count > 0 ? color : '#64748b'};">${count}</div>
+            `;
+            list.appendChild(div);
+        };
+        
+        addIssue("Corrupt Images", data.corrupt_images.count, "fa-solid fa-file-circle-xmark", "#ef4444", "0 byte or unreadable image files.", data.corrupt_images.files);
+        addIssue("Empty Images", data.empty_images.count, "fa-regular fa-image", "#3b82f6", "Images without any annotations.", data.empty_images.files);
+        addIssue("Micro Boxes", data.small_boxes.count, "fa-solid fa-down-left-and-up-right-to-center", "#eab308", "Bounding boxes smaller than 0.05% of the image.", data.small_boxes.files);
+        addIssue("Out-of-Bounds Boxes", data.oob_boxes.count, "fa-solid fa-expand", "#f97316", "Boxes extending beyond image dimensions.", data.oob_boxes.files);
+        
+        // Add Class Imbalance Check
+        const clsCounts = Object.values(data.classes);
+        if (clsCounts.length > 0) {
+            const max = Math.max(...clsCounts);
+            const min = Math.min(...clsCounts);
+            const imbalanceRatio = max / Math.max(min, 1);
+            if (imbalanceRatio > 5) {
+                addIssue("Class Imbalance", Math.round(imbalanceRatio) + "x", "fa-solid fa-scale-unbalanced", "#eab308", "High variance between most and least frequent classes.");
+            } else {
+                addIssue("Class Balance", "OK", "fa-solid fa-scale-balanced", "#22c55e", "Classes are relatively balanced.");
+            }
+        }
+        
+    } catch (err) {
+        console.error("Health check error", err);
+        loading.innerHTML = `<span style="color:#ef4444;">❌ Error loading health data: ${err.message}</span>`;
+    }
+}
+
+document.getElementById("btn-health-close")?.addEventListener("click", () => {
+    document.getElementById("health-modal").style.display = "none";
+});
+
+// ─── DATASET VERSIONING ──────────────────────────────────────────────────────
+async function openVersionsModal() {
+    document.getElementById("versions-modal").style.display = "flex";
+    await loadVersions();
+}
+
+document.getElementById("btn-versions-close")?.addEventListener("click", () => {
+    document.getElementById("versions-modal").style.display = "none";
+});
+
+async function loadVersions() {
+    const list = document.getElementById("versions-list");
+    list.innerHTML = '<div style="color:#94a3b8; padding:10px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading snapshots...</div>';
+    
+    try {
+        const versions = await fetch("/api/versions").then(r => r.json());
+        list.innerHTML = "";
+        
+        if (versions.length === 0) {
+            list.innerHTML = '<div style="color:#64748b; font-size:13px; text-align:center; padding:20px;">No snapshots saved yet.</div>';
+            return;
+        }
+        
+        versions.forEach(v => {
+            const div = document.createElement("div");
+            div.style.background = "#1a1d27";
+            div.style.padding = "12px";
+            div.style.borderRadius = "6px";
+            div.style.display = "flex";
+            div.style.justifyContent = "space-between";
+            div.style.alignItems = "center";
+            
+            const date = new Date(v.timestamp).toLocaleString();
+            
+            div.innerHTML = `
+                <div>
+                    <div style="font-weight:700; font-size:14px; color:#e2e8f0; margin-bottom:4px;">${v.message}</div>
+                    <div style="font-size:11px; color:#64748b;"><i class="fa-regular fa-clock"></i> ${date} • ID: ${v.id}</div>
+                </div>
+                <div>
+                    <button class="btn btn-secondary" style="font-size:11px; padding:4px 8px; color:#ef4444; border-color:#ef444433;" onclick="restoreVersion('${v.id}', '${v.message.replace(/'/g, "\\'")}')">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Restore
+                    </button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    } catch (err) {
+        list.innerHTML = `<span style="color:#ef4444;">❌ Error loading snapshots: ${err.message}</span>`;
+    }
+}
+
+document.getElementById("btn-save-version")?.addEventListener("click", async () => {
+    const msgInput = document.getElementById("version-msg");
+    const msg = msgInput.value.trim() || "Auto snapshot";
+    const btn = document.getElementById("btn-save-version");
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    
+    try {
+        const res = await fetch("/api/versions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: msg })
+        }).then(r => r.json());
+        
+        if (res.success) {
+            showToast("✅ Snapshot saved successfully!");
+            msgInput.value = "";
+            await loadVersions();
+        } else {
+            showToast("❌ Failed to save snapshot", true);
+        }
+    } catch (err) {
+        showToast("❌ Error: " + err.message, true);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Snapshot';
+    }
+});
+
+async function restoreVersion(id, message) {
+    if (!confirm(`Are you SURE you want to restore the snapshot: "${message}"?\n\nThis will OVERWRITE your current database and annotations with the snapshot data. This cannot be easily undone.`)) {
+        return;
+    }
+    
+    const btn = event.currentTarget;
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    
+    try {
+        const res = await fetch(`/api/versions/${id}/restore`, { method: "POST" }).then(r => r.json());
+        if (res.success) {
+            showToast("✅ Snapshot restored! Reloading...");
+            setTimeout(() => window.location.reload(), 1000); // Reload entire page to reconnect DB and refresh grid
+        } else {
+            showToast("❌ Failed to restore: " + res.error, true);
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
+        }
+    } catch (err) {
+        showToast("❌ Error: " + err.message, true);
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+    }
+}
+
