@@ -10,6 +10,7 @@ A complete, professional-grade, end-to-end web application for auto-annotating v
 
 ### Powerful Backend (Flask & YOLO Integration)
 *   **Multi-Format Inference**: Natively loads `.pt`, `.onnx`, `.engine`, `.tflite`, and `.torchscript` models.
+*   **100% Offline Support**: Works entirely locally on your machine. Once dependencies are installed (or models are downloaded), no internet connection is required—keeping your proprietary datasets completely secure and private!
 *   **Bounding Box & Polygon Segmentation**: Fully supports creating and exporting standard YOLO Object Detection (Bounding Box) or YOLO Instance Segmentation (Polygon) datasets.
 *   **Integrated Model Downloading**: Easily select from standard YOLOv8, YOLO11, or the next-gen **YOLO26** pre-trained models. The backend will automatically download the required weights for you!
 *   **Intelligent Auto-GPU Detection**: Automatically profiles system hardware and selects the fastest available inference device (CUDA GPU, Apple MPS, or fallback CPU) to maximize performance. Training is safely blocked if no GPU is found.
