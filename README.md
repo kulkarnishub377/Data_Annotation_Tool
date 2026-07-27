@@ -89,19 +89,27 @@ pip install -r requirements.txt
 
 ### 4. Configuration
 
+The application uses a highly dynamic `config.ini` architecture for setting up your local environment securely without hardcoding paths.
+
 Configure your environment variables by copying the example file:
 
 ```bash
-cp .env.example .env
+cp config.example.ini config.ini
 ```
 
-Then open `.env` and edit the paths to point to your local directories (this avoids hard-coded paths in the code!):
+Then open `config.ini` and edit the paths to point to your local directories:
 
-```env
-BASE_DIR=D:\your_raw_images
-OUTPUT_DIR=D:\your_raw_images\annotated_dataset
+```ini
+[Paths]
+# Base directory where datasets and other data may reside
+BASE_DIR = D:\your_raw_images
+
+# Directory specifically containing custom model files (.pt, .onnx, etc)
+MODELS_DIR = D:\model_train\models
+
+[Settings]
+CONF_THRESH = 0.25
 ```
-
 ## 🚦 Running the Application
 
 With your virtual environment activated, start the Flask server:
