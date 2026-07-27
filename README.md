@@ -10,17 +10,19 @@ A complete, professional-grade, end-to-end web application for auto-annotating v
 
 ### Powerful Backend (Flask & YOLO Integration)
 *   **Multi-Format Inference**: Natively loads `.pt`, `.onnx`, `.engine`, `.tflite`, and `.torchscript` models.
-*   **Intelligent Auto-GPU Detection**: Automatically profiles system hardware and selects the fastest available inference device (CUDA GPU, Apple MPS, or fallback CPU) to maximize performance.
+*   **Bounding Box & Polygon Segmentation**: Fully supports creating and exporting standard YOLO Object Detection (Bounding Box) or YOLO Instance Segmentation (Polygon) datasets.
+*   **Integrated Model Downloading**: Easily select from standard YOLOv8, YOLO11, or the next-gen **YOLO26** pre-trained models. The backend will automatically download the required weights for you!
+*   **Intelligent Auto-GPU Detection**: Automatically profiles system hardware and selects the fastest available inference device (CUDA GPU, Apple MPS, or fallback CPU) to maximize performance. Training is safely blocked if no GPU is found.
 *   **Background Pre-Annotation Engine**: Ingests images instantly using fast, space-saving OS hardlinks, while parallel background threads run YOLO inference to auto-annotate ahead of your workflow.
-*   **Dataset Export**: Zips and exports your fully annotated dataset and generated `data.yaml` with a single click.
-*   **"Null Image" Support & Max Precision**: Retains unannotated background images (Roboflow standard) and saves bounding box coordinates to maximum floating-point precision (16+ decimal places) to preserve absolute mathematical accuracy.
+*   **Dataset Export**: Zips and exports your fully annotated dataset and generated `data.yaml` in either YOLO or COCO formats with a single click.
+*   **"Null Image" Support & Max Precision**: Retains unannotated background images (Roboflow standard) and saves coordinates to maximum floating-point precision (16+ decimal places) to preserve absolute mathematical accuracy.
 
 ### Advanced Frontend (Vanilla HTML/CSS/JS)
-*   **Sleek Setup & Grid View**: A beautiful dark-themed setup screen auto-detects classes. A comprehensive "Grid View" allows dataset-wide inspection, pagination, and status filtering.
+*   **Sleek Setup & Grid View**: A beautiful dark-themed setup screen auto-detects classes and tracks dataset formats. A comprehensive "Grid View" allows dataset-wide inspection, dynamic pagination (50, 100, 200, 500 limits), and status filtering.
 *   **Perfect Zoom, Pan & Minimap**: Refined scroll-wheel math for butter-smooth zooming exactly centered on the cursor, a middle-click drag for panning, and a dynamic heads-up minimap for navigation.
 *   **Image Enhancement Tools**: Real-time slider controls for adjusting image brightness and contrast on-the-fly to spot difficult objects.
 *   **In-Browser Training & SSE Logging**: Start, stop, and configure YOLO training directly from the UI (epochs, batch size, imgsz, lr, device). Monitors progress via Server-Sent Events (SSE) live streaming logs.
-*   **Dynamic Class Popups & Analytics**: Inline class selection popups when drawing new boxes. Dynamic visual progress ring and real-time class distribution bar charts tracking dataset balance.
+*   **Dynamic Class Popups & Analytics**: Inline class selection popups when drawing new boxes/polygons. Dynamic visual progress ring and real-time class distribution bar charts tracking dataset balance.
 *   **Session Tracking**: Topbar session timer tracks your active annotation time.
 
 ## 🏗️ System Architecture

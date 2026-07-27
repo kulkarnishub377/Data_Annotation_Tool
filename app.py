@@ -15,6 +15,8 @@ import uuid
 import tempfile
 import re
 from dotenv import load_dotenv
+import tkinter as tk
+from tkinter import filedialog
 
 load_dotenv()
 
@@ -363,37 +365,102 @@ def calculate_iou(box1, box2):
 
 def annotate_one(img_src_path, lbl_dst_path):
     """Run full-res YOLO on one image → write strict YOLO label file."""
+    dataset_type = db_get_meta("dataset_type", "bbox")
     with _model_lock:
         m = get_model()
         results = m(img_src_path, conf=CONF_THRESH, verbose=False, device=_device)
+        
     boxes = results[0].boxes
     with open(lbl_dst_path, "w") as f:
         if boxes is not None and len(boxes.cls) > 0:
-            kept_boxes = []
-            for i in range(len(boxes.cls)):
-                cls_id = int(boxes.cls[i].item())
-                x, y, w, h = boxes.xywhn[i].tolist()
-                x1, y1, x2, y2 = boxes.xyxyn[i].tolist()
-                
-                # Check for > 90% overlap with already kept boxes
-                is_duplicate = False
-                for kb in kept_boxes:
-                    iou = calculate_iou([x1, y1, x2, y2], kb)
-                    if iou > 0.90:
-                        is_duplicate = True
-                        break
-                        
-                if is_duplicate:
-                    continue
+            if dataset_type == "polygon" and hasattr(results[0], 'masks') and results[0].masks is not None:
+                masks = results[0].masks.xyn
+                for i in range(len(boxes.cls)):
+                    cls_id = int(boxes.cls[i].item())
+                    segment = masks[i]
+                    if len(segment) >= 3:
+                        points_str = " ".join([f"{x} {y}" for x, y in segment])
+                        f.write(f"{cls_id} {points_str}\n")
+            else:
+                # Bounding box logic
+                kept_boxes = []
+                for i in range(len(boxes.cls)):
+                    cls_id = int(boxes.cls[i].item())
+                    x, y, w, h = boxes.xywhn[i].tolist()
+                    x1, y1, x2, y2 = boxes.xyxyn[i].tolist()
                     
-                kept_boxes.append([x1, y1, x2, y2])
-                
-                x = max(0.0, min(1.0, x))
-                y = max(0.0, min(1.0, y))
-                w = max(0.000001, min(1.0, w))
-                h = max(0.000001, min(1.0, h))
-                f.write(f"{cls_id} {x} {y} {w} {h}\n")
+                    # Check for > 90% overlap with already kept boxes
+                    is_duplicate = False
+                    for kb in kept_boxes:
+                        iou = calculate_iou([x1, y1, x2, y2], kb)
+                        if iou > 0.90:
+                            is_duplicate = True
+                            break
+                            
+                    if is_duplicate:
+                        continue
+                        
+                    kept_boxes.append([x1, y1, x2, y2])
+                    
+                    x = max(0.0, min(1.0, x))
+                    y = max(0.0, min(1.0, y))
+                    w = max(0.000001, min(1.0, w))
+                    h = max(0.000001, min(1.0, h))
+                    f.write(f"{cls_id} {x} {y} {w} {h}\n")
 
+
+@app.route("/api/dataset_info")
+def api_dataset_info():
+    path = request.args.get("path", "")
+    if not os.path.exists(path):
+        return jsonify({"valid": False})
+    
+    db_file = os.path.join(path, "state.db")
+    if not os.path.exists(db_file):
+        return jsonify({"valid": False})
+    
+    try:
+        conn = sqlite3.connect(db_file)
+        conn.row_factory = sqlite3.Row
+        
+        # Get dataset type
+        row = conn.execute("SELECT value FROM meta WHERE key='dataset_type'").fetchone()
+        ds_type = row["value"] if row else "bbox"
+        
+        # Get image count
+        count = conn.execute("SELECT COUNT(*) as c FROM images").fetchone()["c"]
+        conn.close()
+        
+        return jsonify({"valid": True, "type": ds_type, "count": count})
+    except Exception as e:
+        return jsonify({"valid": False})
+
+@app.route("/api/source_info")
+def api_source_info():
+    path = request.args.get("path", "")
+    if not os.path.exists(path):
+        return jsonify({"valid": False})
+    
+    count = 0
+    try:
+        for f in os.listdir(path):
+            if Path(f).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".webp"]:
+                count += 1
+        return jsonify({"valid": True, "count": count})
+    except Exception as e:
+        return jsonify({"valid": False})
+
+@app.route("/api/datasets")
+def api_datasets():
+    datasets = []
+    try:
+        for d in os.listdir(BASE_DIR):
+            full_path = os.path.join(BASE_DIR, d)
+            if os.path.isdir(full_path) and os.path.exists(os.path.join(full_path, "state.db")):
+                datasets.append({"name": d, "path": full_path})
+        return jsonify(datasets)
+    except Exception as e:
+        return jsonify([])
 
 def write_yaml():
     with open(os.path.join(OUTPUT_DIR, "data.yaml"), "w") as f:
@@ -528,6 +595,19 @@ def api_class_stats():
 
 
 # ─── API: SOURCE DISCOVERY ───────────────────────────────────────────────────
+@app.route("/api/browse_folder")
+def api_browse_folder():
+    try:
+        # Tkinter requires to run on the main thread ideally, but for simple dialogs on Windows/Linux this usually works.
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        folder = filedialog.askdirectory(parent=root, title="Select Directory")
+        root.destroy()
+        return jsonify({"path": folder})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/source_dirs")
 def api_source_dirs():
     return jsonify(get_image_dirs())
@@ -580,7 +660,7 @@ def api_state():
         entries   = db_get_entries(split)
         annotated = sum(1 for e in entries if os.path.exists(label_path(split, e["name"])))
         counts[split] = {"total": len(entries), "annotated": annotated}
-    return jsonify({"ready": True, "counts": counts, "source": db_get_meta("source", "")})
+    return jsonify({"ready": True, "counts": counts, "source": db_get_meta("source", ""), "dataset_type": db_get_meta("dataset_type", "bbox")})
 
 
 # ─── API: INGEST — hardlink (or copy) images into train/ ─────────────────────
@@ -588,6 +668,7 @@ def api_state():
 def api_ingest():
     data = request.get_json()
     src  = data.get("source_dir", "")
+    dataset_type = data.get("dataset_type", "bbox")
     if not src or not os.path.isdir(src):
         return jsonify({"error": "invalid source dir"}), 400
 
@@ -618,6 +699,7 @@ def api_ingest():
         db_clear()
         db_insert_entries(entries, "train")
         db_set_meta("source", src)
+        db_set_meta("dataset_type", dataset_type)
         write_yaml()
 
         # Queue background pre-annotation
@@ -823,12 +905,17 @@ def api_dataset_page():
                 with open(e["lbl_path"]) as f:
                     for line in f:
                         p = line.strip().split()
-                        if len(p) >= 5:
+                        if len(p) == 5:
                             boxes.append({
                                 "cls": int(p[0]),
                                 "x": float(p[1]), "y": float(p[2]),
                                 "w": float(p[3]), "h": float(p[4])
                             })
+                        elif len(p) > 5:
+                            pts = []
+                            for j in range(1, len(p) - 1, 2):
+                                pts.append({"x": float(p[j]), "y": float(p[j+1])})
+                            boxes.append({"cls": int(p[0]), "pts": pts})
             except Exception:
                 pass
         results.append({
@@ -909,10 +996,15 @@ def api_labels(split, filename):
         with open(lbl) as f:
             for i, line in enumerate(f):
                 p = line.strip().split()
-                if len(p) >= 5:
+                if len(p) == 5:
                     boxes.append({"id": i, "cls": int(p[0]),
                                   "x": float(p[1]), "y": float(p[2]),
                                   "w": float(p[3]), "h": float(p[4])})
+                elif len(p) > 5:
+                    pts = []
+                    for j in range(1, len(p) - 1, 2):
+                        pts.append({"x": float(p[j]), "y": float(p[j+1])})
+                    boxes.append({"id": i, "cls": int(p[0]), "pts": pts})
     return jsonify(boxes)
 
 
@@ -927,7 +1019,11 @@ def api_save():
     os.makedirs(os.path.dirname(lbl), exist_ok=True)
     with open(lbl, "w") as f:
         for b in boxes:
-            f.write(f"{b['cls']} {b['x']} {b['y']} {b['w']} {b['h']}\n")
+            if "pts" in b:
+                points_str = " ".join([f"{pt['x']} {pt['y']}" for pt in b["pts"]])
+                f.write(f"{b['cls']} {points_str}\n")
+            else:
+                f.write(f"{b['cls']} {b['x']} {b['y']} {b['w']} {b['h']}\n")
     return jsonify({"status": "ok"})
 
 
@@ -958,6 +1054,9 @@ def api_train():
     project    = data.get("project", "runs/train")
     name       = data.get("name",    "vehicle_detect")
     yaml_path  = os.path.join(OUTPUT_DIR, "data.yaml")
+
+    if device == "cpu":
+        return jsonify({"error": "Training on CPU is disabled to prevent system freeze. A CUDA GPU or MPS is required."}), 400
 
     if not os.path.exists(yaml_path):
         return jsonify({"error": "data.yaml not found — run auto-split first"}), 400
@@ -1048,8 +1147,11 @@ def api_models():
         f for f in os.listdir(BASE_DIR)
         if Path(f).suffix.lower() in MODEL_EXTS
     ]
-    presets = ["yolov8n.pt", "yolov8s.pt", "yolov8m.pt", "yolov8l.pt", "yolov8x.pt",
-               "yolov8n.onnx", "yolov8s.onnx"]
+    presets = [
+        "yolov8n.pt", "yolov8s.pt", "yolov8m.pt", "yolov8l.pt", "yolov8x.pt",
+        "yolo11n.pt", "yolo11s.pt", "yolo11m.pt", "yolo11l.pt", "yolo11x.pt",
+        "yolo26n.pt", "yolo26s.pt", "yolo26m.pt", "yolo26l.pt", "yolo26x.pt"
+    ]
     return jsonify({"files": all_models, "presets": presets})
 
 
@@ -1057,16 +1159,86 @@ def api_models():
 @app.route("/api/export")
 def api_export():
     """Zips the annotated dataset to disk and serves it for download."""
+    fmt = request.args.get("format", "yolo")
     temp_fd, temp_path = tempfile.mkstemp(suffix=".zip", prefix=f"{_current_dataset_name}_")
     os.close(temp_fd) 
     
     with zipfile.ZipFile(temp_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for root, dirs, files in os.walk(OUTPUT_DIR):
-            if "state.db" in files: files.remove("state.db") # Don't export internal db
-            for file in files:
-                fpath = os.path.join(root, file)
-                arcname = os.path.relpath(fpath, OUTPUT_DIR)
-                zf.write(fpath, arcname)
+        if fmt == "coco":
+            for split in ["train", "valid", "test"]:
+                split_dir = os.path.join(OUTPUT_DIR, split)
+                if not os.path.exists(split_dir): continue
+                img_dir = os.path.join(split_dir, "images")
+                lbl_dir = os.path.join(split_dir, "labels")
+                if not os.path.exists(img_dir): continue
+                
+                coco = {
+                    "info": {"description": "Exported from Data Annotator Tool"},
+                    "categories": [{"id": i, "name": n, "supercategory": "none"} for i, n in enumerate(_class_names)],
+                    "images": [],
+                    "annotations": []
+                }
+                
+                ann_id = 1
+                for img_id, img_file in enumerate(os.listdir(img_dir), start=1):
+                    img_path = os.path.join(img_dir, img_file)
+                    h, w = 1000, 1000
+                    try:
+                        import cv2
+                        im = cv2.imread(img_path)
+                        if im is not None:
+                            h, w = im.shape[:2]
+                    except: pass
+                    
+                    coco["images"].append({"id": img_id, "file_name": img_file, "width": w, "height": h})
+                    zf.write(img_path, f"{split}/images/{img_file}")
+                    
+                    lbl_file = os.path.splitext(img_file)[0] + ".txt"
+                    lbl_path = os.path.join(lbl_dir, lbl_file)
+                    if os.path.exists(lbl_path):
+                        with open(lbl_path) as f:
+                            for line in f:
+                                p = line.strip().split()
+                                if len(p) == 5:
+                                    cls = int(p[0])
+                                    cx, cy, bw, bh = map(float, p[1:5])
+                                    x = (cx - bw/2) * w
+                                    y = (cy - bh/2) * h
+                                    width = bw * w
+                                    height = bh * h
+                                    coco["annotations"].append({
+                                        "id": ann_id, "image_id": img_id, "category_id": cls,
+                                        "bbox": [x, y, width, height], "area": width*height,
+                                        "iscrowd": 0, "segmentation": []
+                                    })
+                                    ann_id += 1
+                                elif len(p) > 5:
+                                    cls = int(p[0])
+                                    pts = list(map(float, p[1:]))
+                                    seg = []
+                                    xs, ys = [], []
+                                    for i in range(0, len(pts), 2):
+                                        px, py = pts[i]*w, pts[i+1]*h
+                                        xs.append(px); ys.append(py)
+                                        seg.extend([px, py])
+                                    if len(xs) > 0:
+                                        xmin, ymin = min(xs), min(ys)
+                                        xmax, ymax = max(xs), max(ys)
+                                        coco["annotations"].append({
+                                            "id": ann_id, "image_id": img_id, "category_id": cls,
+                                            "bbox": [xmin, ymin, xmax-xmin, ymax-ymin], "area": (xmax-xmin)*(ymax-ymin),
+                                            "iscrowd": 0, "segmentation": [seg]
+                                        })
+                                        ann_id += 1
+                
+                zf.writestr(f"{split}/_annotations.coco.json", json.dumps(coco))
+        else:
+            for root, dirs, files in os.walk(OUTPUT_DIR):
+                if "state.db" in files: files.remove("state.db")
+                for file in files:
+                    fpath = os.path.join(root, file)
+                    arcname = os.path.relpath(fpath, OUTPUT_DIR)
+                    zf.write(fpath, arcname)
                 
     @after_this_request
     def remove_file(response):
@@ -1076,7 +1248,7 @@ def api_export():
             pass
         return response
 
-    return send_file(temp_path, download_name=f"{_current_dataset_name}_export.zip", as_attachment=True)
+    return send_file(temp_path, download_name=f"{_current_dataset_name}_export_{fmt}.zip", as_attachment=True)
 
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────

@@ -10,11 +10,12 @@ let allImages = [];
 let filteredImages = [];
 let currentIndex = -1;
 let boxes = [];
-let selectedBox = -1;
+let selectedBoxes = [];
 let dirty = false;
 let drawMode = false;
 let autoSave = true;
 let sidebarFilter = "all";   // 'all' | 'done' | 'pending'
+let datasetType = "bbox"; // 'bbox' | 'polygon'
 
 // Session timer
 let _sessionStart = Date.now();
@@ -49,7 +50,7 @@ class CommandManager {
         const cmd = this.undoStack.pop();
         cmd.undo();
         this.redoStack.push(cmd);
-        selectedBox = -1; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        selectedBoxes = []; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
         showToast("↩ Undo");
     }
     redo() {
@@ -57,7 +58,7 @@ class CommandManager {
         const cmd = this.redoStack.pop();
         cmd.execute();
         this.undoStack.push(cmd);
-        selectedBox = -1; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        selectedBoxes = []; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
         showToast("↪ Redo");
     }
     clear() { this.undoStack = []; this.redoStack = []; }
@@ -110,6 +111,7 @@ let _imgReady = false, _labelsReady = false;
 async function initSetup() {
     const st = await fetch("/api/state").then(r => r.json()).catch(() => ({ ready: false }));
     if (st.ready) {
+        datasetType = st.dataset_type || "bbox";
         const c = st.counts;
         document.getElementById("existing-text").textContent =
             `Dataset found — Train:${c.train.total}  Valid:${c.valid.total}  Test:${c.test.total}`;
@@ -119,7 +121,11 @@ async function initSetup() {
     // Load available model files (all formats)
     const mdata = await fetch("/api/models").then(r => r.json()).catch(() => ({ files: [], presets: [] }));
     const msel = document.getElementById("model-select");
-    msel.innerHTML = '<option value="">— select model file —</option>';
+    const mpre = document.getElementById("model-preset");
+    
+    msel.innerHTML = '<option value="">— select local model —</option>';
+    if (mpre) mpre.innerHTML = '<option value="">— select preset to download —</option>';
+    
     // Group by format
     const byExt = {};
     mdata.files.forEach(f => {
@@ -132,10 +138,15 @@ async function initSetup() {
         files.forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = f; grp.appendChild(o); });
         msel.appendChild(grp);
     });
-    if (mdata.files.length === 0) {
+    
+    if (mpre) {
         mdata.presets.forEach(f => {
-            const o = document.createElement('option'); o.value = f; o.textContent = f + ' (download preset)'; msel.appendChild(o);
+            const o = document.createElement('option'); o.value = f; o.textContent = f; mpre.appendChild(o);
         });
+        
+        // Mutually exclusive
+        msel.addEventListener("change", () => { if(msel.value) mpre.value = ""; });
+        mpre.addEventListener("change", () => { if(mpre.value) msel.value = ""; });
     }
 
     // Show auto-detected device info
@@ -149,36 +160,116 @@ async function initSetup() {
     } else {
         devEl.innerHTML = `<span style="color:#f59e0b;">⚡ No GPU detected — will use CPU for inference</span>`;
     }
+    
+    // Helper to check dataset info
+    async function checkDatasetInfo(path) {
+        const inputExisting = document.getElementById("existing-dataset-input");
+        const btnLoadExisting = document.getElementById("btn-load-existing");
+        const infoBox = document.getElementById("existing-info");
+        
+        inputExisting.value = path;
+        btnLoadExisting.disabled = false;
+        infoBox.style.display = "block";
+        infoBox.textContent = "Checking dataset...";
+        infoBox.style.color = "#94a3b8";
+        
+        try {
+            const info = await fetch(`/api/dataset_info?path=${encodeURIComponent(path)}`).then(r => r.json());
+            if (info.valid) {
+                infoBox.style.color = "#86efac";
+                infoBox.innerHTML = `✅ Found Dataset — <b>Type:</b> ${info.type === 'polygon' ? 'Polygon (Seg)' : 'Bounding Box (Det)'} | <b>Images:</b> ${info.count}`;
+            } else {
+                infoBox.style.color = "#f87171";
+                infoBox.innerHTML = `⚠️ No valid state.db found. Are you sure this is a dataset folder?`;
+            }
+        } catch(e) {
+            infoBox.style.display = "none";
+        }
+    }
 
-    // Load existing datasets
-    const extDirs = await fetch("/api/existing_datasets").then(r => r.json());
-    const extSel = document.getElementById("existing-dataset-select");
-    extSel.innerHTML = '<option value="">— choose existing dataset —</option>';
-    extDirs.forEach(d => {
-        const o = document.createElement("option"); o.value = d.path;
-        o.textContent = d.name; extSel.appendChild(o);
+    // Populate existing datasets dropdown
+    const dsel = document.getElementById("existing-dataset-select");
+    const ddata = await fetch("/api/datasets").then(r => r.json()).catch(() => []);
+    dsel.innerHTML = '<option value="">— choose an existing dataset from root —</option>';
+    ddata.forEach(d => {
+        const o = document.createElement("option");
+        o.value = d.path;
+        o.textContent = d.name;
+        dsel.appendChild(o);
     });
-    extSel.addEventListener("change", () => {
-        document.getElementById("btn-load-existing").disabled = !extSel.value;
-    });
+    
+    if (dsel) {
+        dsel.addEventListener("change", () => {
+            if (dsel.value) {
+                checkDatasetInfo(dsel.value);
+            }
+        });
+    }
 
-    // Load source dirs
-    const dirs = await fetch("/api/source_dirs").then(r => r.json());
-    const sel = document.getElementById("src-select");
-    sel.innerHTML = '<option value="">— choose source folder —</option>';
-    dirs.forEach(d => {
-        const o = document.createElement("option"); o.value = d.path;
-        o.textContent = `${d.name}  (${d.count} images)`; sel.appendChild(o);
-    });
-    sel.addEventListener("change", () => {
-        const ok = !!sel.value;
-        document.getElementById("btn-ingest").disabled = !ok;
-        const badge = document.getElementById("img-badge");
-        if (ok) {
-            badge.innerHTML = `<span class="badge badge-blue">${sel.options[sel.selectedIndex].textContent}</span>`;
-            badge.style.display = "block";
-        } else { badge.style.display = "none"; }
-    });
+    // Setup Browse Button for Existing Datasets
+    const btnBrowseExisting = document.getElementById("btn-browse-existing");
+    if (btnBrowseExisting) {
+        btnBrowseExisting.addEventListener("click", async () => {
+            const res = await fetch("/api/browse_folder").then(r => r.json());
+            if (res.path) {
+                if (dsel) dsel.value = "";
+                checkDatasetInfo(res.path);
+            }
+        });
+    }
+
+    // Setup Browse Button for Source Folders
+    const btnBrowseSrc = document.getElementById("btn-browse-src");
+    const inputSrc = document.getElementById("src-input");
+    const btnIngest = document.getElementById("btn-ingest");
+    if (btnBrowseSrc) {
+        btnBrowseSrc.addEventListener("click", async () => {
+            const res = await fetch("/api/browse_folder").then(r => r.json());
+            if (res.path) {
+                inputSrc.value = res.path;
+                btnIngest.disabled = false;
+                const badge = document.getElementById("img-badge");
+                badge.innerHTML = `<span class="badge badge-blue">${res.path.replace(/\\\\/g, '/').split('/').pop()}</span>`;
+                badge.style.display = "block";
+                
+                // Fetch info
+                const infoBox = document.getElementById("src-info");
+                infoBox.style.display = "block";
+                infoBox.textContent = "Scanning folder...";
+                infoBox.style.color = "#94a3b8";
+                
+                try {
+                    const info = await fetch(`/api/source_info?path=${encodeURIComponent(res.path)}`).then(r => r.json());
+                    if (info.valid) {
+                        if (info.count > 0) {
+                            infoBox.style.color = "#86efac";
+                            infoBox.innerHTML = `✅ Found <b>${info.count}</b> images ready to load.`;
+                        } else {
+                            infoBox.style.color = "#f59e0b";
+                            infoBox.innerHTML = `⚠️ No supported images (.jpg, .png, etc.) found in this folder.`;
+                        }
+                    } else {
+                        infoBox.style.color = "#f87171";
+                        infoBox.innerHTML = `❌ Failed to read folder contents.`;
+                    }
+                } catch(e) {
+                    infoBox.style.display = "none";
+                }
+            }
+        });
+    }
+
+    // Setup Browse Button for Appending Source Folders
+    const btnBrowseAddSrc = document.getElementById("btn-browse-add-src");
+    const inputAddSrc = document.getElementById("add-src-input");
+    if (btnBrowseAddSrc) {
+        btnBrowseAddSrc.addEventListener("click", async () => {
+            const res = await fetch("/api/browse_folder").then(r => r.json());
+            if (res.path) {
+                inputAddSrc.value = res.path;
+            }
+        });
+    }
 
     // Training panel custom model list
     const csel = document.getElementById("tr-custom");
@@ -190,17 +281,27 @@ async function initSetup() {
 
 // ─── LOAD MODEL BUTTON ───────────────────────────────────────────────────────
 document.getElementById("btn-load-model").addEventListener("click", async () => {
-    const modelPath = document.getElementById("model-select").value;
+    const msel = document.getElementById("model-select").value;
+    const mpre = document.getElementById("model-preset") ? document.getElementById("model-preset").value : "";
+    const modelPath = msel || mpre;
+    
+    if (!modelPath) {
+        showToast("❌ Please select a model to load", true);
+        return;
+    }
+
     const device = document.getElementById("device-select").value;
     const btn = document.getElementById("btn-load-model");
-    btn.disabled = true; btn.textContent = "⏳ Loading model…";
+    btn.disabled = true; 
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Downloading & Loading...';
 
     const res = await fetch("/api/set_model", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model_path: modelPath, device })
     });
     const data = await res.json();
-    btn.disabled = false; btn.textContent = "⚡ Load Model & Extract Classes";
+    btn.disabled = false; 
+    btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Load Model';
 
     if (data.error) { showToast("❌ " + data.error, true); return; }
 
@@ -267,7 +368,7 @@ document.getElementById("btn-goto-setup").addEventListener("click", () => {
 });
 
 document.getElementById("btn-load-existing").addEventListener("click", async () => {
-    const src = document.getElementById("existing-dataset-select").value;
+    const src = document.getElementById("existing-dataset-input").value;
     if (!src) return;
     document.getElementById("btn-load-existing").disabled = true;
     document.getElementById("btn-load-existing").innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
@@ -288,7 +389,8 @@ document.getElementById("btn-load-existing").addEventListener("click", async () 
 });
 
 document.getElementById("btn-ingest").addEventListener("click", async () => {
-    const src = document.getElementById("src-select").value;
+    const src = document.getElementById("src-input").value;
+    const type = document.getElementById("dataset-type-select").value;
     if (!src) return;
     document.getElementById("btn-ingest").disabled = true;
     document.getElementById("ingest-prog").style.display = "block";
@@ -296,7 +398,7 @@ document.getElementById("btn-ingest").addEventListener("click", async () => {
 
     const { job_id } = await fetch("/api/ingest", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source_dir: src })
+        body: JSON.stringify({ source_dir: src, dataset_type: type })
     }).then(r => r.json());
 
     const es = new EventSource(`/api/progress/${job_id}`);
@@ -417,22 +519,51 @@ function _doRender() {
     ctx.drawImage(imgEl, ox, oy, dW, dH);
     ctx.filter = "none";
 
-    // Draw boxes
+    // Draw boxes or polygons
     boxes.forEach((b, i) => {
-        const d = n2d(b), col = COLORS[b.cls % COLORS.length], sel = i === selectedBox;
+        const col = COLORS[b.cls % COLORS.length];
+        const sel = selectedBoxes.includes(i);
         ctx.strokeStyle = sel ? "#fff" : col; ctx.lineWidth = sel ? 2.5 : 1.5;
-        ctx.strokeRect(d.x, d.y, d.w, d.h);
-        ctx.fillStyle = col + (sel ? "2a" : "15"); ctx.fillRect(d.x, d.y, d.w, d.h);
-        if (sel) {
-            [[d.x, d.y], [d.x + d.w, d.y], [d.x, d.y + d.h], [d.x + d.w, d.y + d.h]].forEach(([cx, cy]) => {
-                ctx.fillStyle = "#fff"; ctx.fillRect(cx - HANDLE / 2, cy - HANDLE / 2, HANDLE, HANDLE);
-                ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.strokeRect(cx - HANDLE / 2, cy - HANDLE / 2, HANDLE, HANDLE);
+        ctx.fillStyle = col + (sel ? "4a" : "25");
+        
+        let tx, ty;
+        
+        if (datasetType === "polygon" && b.pts) {
+            ctx.beginPath();
+            b.pts.forEach((pt, pi) => {
+                const px = ox + pt.x * imgNatW * scale;
+                const py = oy + pt.y * imgNatH * scale;
+                if (pi === 0) { ctx.moveTo(px, py); tx = px; ty = py; }
+                else { ctx.lineTo(px, py); if (py < ty) { tx = px; ty = py; } }
             });
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            
+            if (sel) {
+                b.pts.forEach((pt) => {
+                    const px = ox + pt.x * imgNatW * scale;
+                    const py = oy + pt.y * imgNatH * scale;
+                    ctx.fillStyle = "#fff"; ctx.fillRect(px - HANDLE / 2, py - HANDLE / 2, HANDLE, HANDLE);
+                    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.strokeRect(px - HANDLE / 2, py - HANDLE / 2, HANDLE, HANDLE);
+                });
+            }
+        } else {
+            const d = n2d(b);
+            ctx.strokeRect(d.x, d.y, d.w, d.h);
+            ctx.fillRect(d.x, d.y, d.w, d.h);
+            tx = d.x; ty = d.y;
+            if (sel) {
+                [[d.x, d.y], [d.x + d.w, d.y], [d.x, d.y + d.h], [d.x + d.w, d.y + d.h]].forEach(([cx, cy]) => {
+                    ctx.fillStyle = "#fff"; ctx.fillRect(cx - HANDLE / 2, cy - HANDLE / 2, HANDLE, HANDLE);
+                    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.strokeRect(cx - HANDLE / 2, cy - HANDLE / 2, HANDLE, HANDLE);
+                });
+            }
         }
+        
         const lbl = `[${b.cls + 1}] ${CLASS_NAMES[b.cls] || b.cls}`;
         ctx.font = "bold 11px Inter,sans-serif";
         const tw = ctx.measureText(lbl).width;
-        const tx = d.x, ty = d.y > 16 ? d.y - 3 : d.y + d.h + 13;
+        ty = ty > 16 ? ty - 3 : ty + 15;
         ctx.fillStyle = col; ctx.fillRect(tx, ty - 12, tw + 8, 14);
         ctx.fillStyle = "#fff"; ctx.fillText(lbl, tx + 4, ty);
     });
@@ -492,17 +623,25 @@ canvas.addEventListener("mousedown", e => {
 
     if (drawMode) { drag = { on: true, type: "draw", bIdx: -1, sx: x, sy: y, ds: { x, y } }; return; }
 
-    if (selectedBox >= 0) {
-        const h = hitHandle(selectedBox, x, y);
-        if (h) { drag = { on: true, type: h, bIdx: selectedBox, sx: x, sy: y, ob: { ...boxes[selectedBox] } }; return; }
+    if (selectedBoxes.length > 0 && !e.shiftKey) {
+        const h = hitHandle(selectedBoxes[0], x, y);
+        if (h && selectedBoxes.length === 1) { drag = { on: true, type: h, bIdx: selectedBoxes[0], sx: x, sy: y, ob: { ...boxes[selectedBoxes[0]] } }; return; }
     }
     const hit = hitBox(x, y);
     if (hit >= 0) {
         pushUndo();
-        selectedBox = hit; drag = { on: true, type: "move", bIdx: hit, sx: x, sy: y, ob: { ...boxes[hit] } };
+        if (e.shiftKey) {
+            if (selectedBoxes.includes(hit)) selectedBoxes = selectedBoxes.filter(i => i !== hit);
+            else selectedBoxes.push(hit);
+        } else {
+            selectedBoxes = [hit];
+        }
+        if (selectedBoxes.length === 1) {
+            drag = { on: true, type: "move", bIdx: hit, sx: x, sy: y, ob: { ...boxes[hit] } };
+        }
         updateBoxPanel(); renderCanvas(); return;
     }
-    selectedBox = -1; updateBoxPanel(); renderCanvas();
+    selectedBoxes = []; updateBoxPanel(); renderCanvas();
 });
 
 canvas.addEventListener("mousemove", e => {
@@ -516,7 +655,7 @@ canvas.addEventListener("mousemove", e => {
 
     if (!drag.on) {
         canvas.style.cursor = drawMode ? "crosshair" :
-            selectedBox >= 0 && hitHandle(selectedBox, x, y) ? "nwse-resize" :
+            selectedBoxes.length === 1 && hitHandle(selectedBoxes[0], x, y) ? "nwse-resize" :
                 hitBox(x, y) >= 0 ? "move" : "default";
         renderCanvas(); return;
     }
@@ -619,8 +758,9 @@ function showClassPopup(x1, y1, x2, y2) {
 }
 
 document.getElementById("popup-confirm").addEventListener("click", () => {
-    if (boxes.length > 0 && selectedBox >= 0) {
-        boxes[selectedBox].cls = parseInt(document.getElementById("popup-cls-sel").value);
+    if (boxes.length > 0 && selectedBoxes.length > 0) {
+        const cls = parseInt(document.getElementById("popup-cls-sel").value);
+        selectedBoxes.forEach(i => boxes[i].cls = cls);
         dirty = true;
         triggerAutoSave();
         updateBoxPanel(); renderCanvas();
@@ -629,11 +769,11 @@ document.getElementById("popup-confirm").addEventListener("click", () => {
 });
 
 document.getElementById("popup-cancel").addEventListener("click", () => {
-    if (boxes.length > 0) {
+    if (boxes.length > 0 && selectedBoxes.length > 0) {
         pushUndo();
-        boxes.splice(selectedBox, 1);
+        boxes = boxes.filter((_, i) => !selectedBoxes.includes(i));
         commitUndo();
-        selectedBox = Math.max(-1, boxes.length - 1);
+        selectedBoxes = boxes.length > 0 ? [boxes.length - 1] : [];
     }
     document.getElementById("class-popup").style.display = "none";
     dirty = true; updateBoxPanel(); renderCanvas();
@@ -684,27 +824,33 @@ window.addEventListener("keydown", e => {
     if (e.key === "=" || e.key === "+") { zoomScale = Math.min(20, zoomScale * 1.2); renderCanvas(); }
     if (e.key === "-") { zoomScale = Math.max(0.2, zoomScale / 1.2); renderCanvas(); }
     if (e.key === "Enter") saveAndNext();
-    if ((e.key === "Delete" || e.key === "Backspace") && selectedBox >= 0) { pushUndo(); deleteBox(selectedBox); commitUndo(); }
+    if ((e.key === "Delete" || e.key === "Backspace") && selectedBoxes.length > 0) { 
+        pushUndo(); 
+        boxes = boxes.filter((_, i) => !selectedBoxes.includes(i));
+        selectedBoxes = [];
+        commitUndo(); 
+        dirty = true; updateBoxPanel(); renderCanvas();
+    }
 
     // Number keys 1-9 → set class of selected box
     const num = parseInt(e.key);
-    if (!isNaN(num) && num >= 1 && num <= CLASS_NAMES.length && selectedBox >= 0) {
+    if (!isNaN(num) && num >= 1 && num <= CLASS_NAMES.length && selectedBoxes.length > 0) {
         pushUndo();
-        boxes[selectedBox].cls = num - 1;
+        selectedBoxes.forEach(i => boxes[i].cls = num - 1);
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
         commitUndo();
     }
 
     // Q/E Class Cycling Hotkeys
-    if (e.key === "e" && selectedBox >= 0) {
+    if (e.key === "e" && selectedBoxes.length > 0) {
         pushUndo();
-        boxes[selectedBox].cls = (boxes[selectedBox].cls + 1) % CLASS_NAMES.length;
+        selectedBoxes.forEach(i => boxes[i].cls = (boxes[i].cls + 1) % CLASS_NAMES.length);
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
         commitUndo();
     }
-    if (e.key === "q" && selectedBox >= 0) {
+    if (e.key === "q" && selectedBoxes.length > 0) {
         pushUndo();
-        boxes[selectedBox].cls = (boxes[selectedBox].cls - 1 + CLASS_NAMES.length) % CLASS_NAMES.length;
+        selectedBoxes.forEach(i => boxes[i].cls = (boxes[i].cls - 1 + CLASS_NAMES.length) % CLASS_NAMES.length);
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
         commitUndo();
     }
@@ -714,7 +860,7 @@ window.addEventListener("keydown", e => {
 async function loadSplitImages(split) {
     currentSplit = split;
     localStorage.setItem("lastSplit", split);
-    currentIndex = -1; boxes = []; selectedBox = -1;
+    currentIndex = -1; boxes = []; selectedBoxes = [];
     showLoading("Loading list…");
     allImages = await fetch(`/api/images?split=${split}`).then(r => r.json());
     filteredImages = [...allImages];
@@ -755,7 +901,7 @@ function preloadAround(idx) {
 async function loadImage(filename) {
     const myId = ++_loadId;
     _imgReady = false; _labelsReady = false;
-    boxes = []; selectedBox = -1; dirty = false;
+    boxes = []; selectedBoxes = []; dirty = false;
     cmdManager.clear();
     zoomScale = 1.0; panX = 0; panY = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1180,13 +1326,28 @@ async function pollTrainStatus() {
     document.getElementById("train-status").textContent =
         d.status === "running" ? "⏳ Training in progress…" :
             d.status === "done" ? `✅ Done (exit code ${d.exit_code})` : "";
-    document.getElementById("btn-train").disabled = d.status === "running";
+            
+    const btnTrain = document.getElementById("btn-train");
+    const dev = document.getElementById("tr-device").value;
+    if (d.status === "running") {
+        btnTrain.disabled = true;
+        btnTrain.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Training...';
+    } else if (dev === "cpu") {
+        btnTrain.disabled = true;
+        btnTrain.innerHTML = '<i class="fa-solid fa-ban"></i> CPU Training Disabled';
+    } else {
+        btnTrain.disabled = false;
+        btnTrain.innerHTML = '<i class="fa-solid fa-play"></i> Start Training';
+    }
 }
+
+document.getElementById("tr-device").addEventListener("change", () => {
+    pollTrainStatus(); // Re-evaluates button state
+});
 
 // ─── GRID VIEW LOGIC ─────────────────────────────────────────────────────────
 let appMode = "annotate"; // 'annotate' | 'grid'
 let gridPage = 1;
-const gridLimit = 15;
 let currentGridImages = [];
 let currentGridIndex = -1;
 
@@ -1201,15 +1362,6 @@ async function setAppMode(mode) {
         document.getElementById("right").style.display = "none";
         const gv = document.getElementById("grid-view");
         gv.style.display = "flex";
-        requestAnimationFrame(() => {
-            const header = document.querySelector(".grid-header");
-            const headerH = header ? header.offsetHeight : 50;
-            const gc = document.getElementById("grid-content");
-            if (gc) {
-                gc.style.height = (window.innerHeight - 48 - headerH) + "px";
-                gc.style.overflowY = "auto";
-            }
-        });
         await loadGridPage(1);
     } else {
         document.getElementById("grid-view").style.display = "none";
@@ -1220,19 +1372,13 @@ async function setAppMode(mode) {
     }
 }
 
-window.addEventListener("resize", () => {
-    if (appMode === "grid") {
-        const header = document.querySelector(".grid-header");
-        const headerH = header ? header.offsetHeight : 50;
-        const gc = document.getElementById("grid-content");
-        if (gc) gc.style.height = (window.innerHeight - 48 - headerH) + "px";
-    }
-});
+
 
 async function loadGridPage(page) {
     if (page < 1) page = 1;
     const filter = document.getElementById("grid-filter").value;
     const clsFilter = document.getElementById("grid-class-filter").value;
+    const gridLimit = document.getElementById("grid-limit") ? parseInt(document.getElementById("grid-limit").value) : 50;
     showLoading("Loading grid...");
     try {
         const res = await fetch(`/api/dataset_page?split=${currentSplit}&page=${page}&limit=${gridLimit}&filter=${filter}&class_id=${clsFilter}`).then(r => {
@@ -1241,9 +1387,20 @@ async function loadGridPage(page) {
         });
 
         gridPage = res.page;
-        document.getElementById("grid-page-info").textContent = `Page ${res.page} / ${res.pages}`;
+        const pageText = `Page ${res.page} / ${res.pages}`;
+        
+        document.getElementById("grid-page-info").textContent = pageText;
         document.getElementById("grid-prev").disabled = (res.page <= 1);
         document.getElementById("grid-next").disabled = (res.page >= res.pages);
+        
+        const infoBtm = document.getElementById("grid-page-info-btm");
+        if (infoBtm) infoBtm.textContent = pageText;
+        
+        const prevBtm = document.getElementById("grid-prev-btm");
+        if (prevBtm) prevBtm.disabled = (res.page <= 1);
+        
+        const nextBtm = document.getElementById("grid-next-btm");
+        if (nextBtm) nextBtm.disabled = (res.page >= res.pages);
 
         const cont = document.getElementById("grid-content");
         cont.innerHTML = "";
@@ -1420,20 +1577,14 @@ function closeImageModal() {
 
 // ─── ADD IMAGES MODAL LOGIC ──────────────────────────────────────────────────
 document.getElementById("btn-add-images").addEventListener("click", async () => {
-    const dirs = await fetch("/api/source_dirs").then(r => r.json());
-    const sel = document.getElementById("add-src-select");
-    sel.innerHTML = '<option value="">— choose source folder —</option>';
-    dirs.forEach(d => {
-        const o = document.createElement("option"); o.value = d.path;
-        o.textContent = `${d.name}  (${d.count} images)`; sel.appendChild(o);
-    });
+    document.getElementById("add-src-input").value = "";
     document.getElementById("add-ingest-prog").style.display = "none";
     document.getElementById("btn-confirm-add").disabled = false;
     document.getElementById("add-images-modal").classList.remove("hidden");
 });
 
 document.getElementById("btn-confirm-add").addEventListener("click", async () => {
-    const src = document.getElementById("add-src-select").value;
+    const src = document.getElementById("add-src-input").value;
     if (!src) return;
     const targetSplit = "train";
 
@@ -1556,3 +1707,20 @@ setInterval(() => {
     }
   }
 }, 3000);
+
+document.getElementById("btn-export-dataset")?.addEventListener("click", () => {
+    const format = document.getElementById("export-format").value;
+    const btn = document.getElementById("btn-export-dataset");
+    const oldText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+    
+    // Trigger download
+    window.location.href = `/api/export?format=${format}`;
+    
+    // Re-enable after a short delay since we can't perfectly track when download finishes
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = oldText;
+    }, 4000);
+});

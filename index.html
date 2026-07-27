@@ -34,7 +34,12 @@
         <h2>Model Configuration</h2>
         <p class="card-desc">Load your YOLO model to automatically extract classes and configure inference.</p>
         
-        <div class="field-label">Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
+        <div class="field-label">Pre-trained Base Model</div>
+        <select id="model-preset" class="field-select glass-input" style="margin-bottom: 10px;"></select>
+        
+        <div class="divider-text" style="margin: 10px 0;"><span>OR</span></div>
+        
+        <div class="field-label">Local Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
         <select id="model-select" class="field-select glass-input"></select>
         
         <div class="field-label">Inference Device</div>
@@ -60,8 +65,15 @@
         <h2>Dataset Management</h2>
         
         <div class="dataset-section">
-          <div class="field-label">Open Existing Dataset</div>
-          <select id="existing-dataset-select" class="field-select glass-input"></select>
+          <div class="field-label">Dataset Folder</div>
+          <select id="existing-dataset-select" class="field-select glass-input" style="margin-bottom:12px;">
+            <option value="">— choose an existing dataset from root —</option>
+          </select>
+          <div style="display:flex; gap:8px; margin-bottom: 16px;">
+            <input type="text" id="existing-dataset-input" class="glass-input" style="flex:1;" placeholder="Or browse custom folder..." readonly />
+            <button class="btn btn-secondary" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
+          </div>
+          <div id="existing-info" style="font-size: 11px; color: #86efac; margin-top: -6px; margin-bottom: 12px; display: none;"></div>
           <button class="btn btn-green btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
         </div>
         
@@ -69,8 +81,18 @@
         
         <div class="dataset-section">
           <div class="field-label">Create New Dataset (Select Source)</div>
-          <select id="src-select" class="field-select glass-input"></select>
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <input type="text" id="src-input" class="glass-input" style="flex:1;" placeholder="Source folder path..." readonly />
+            <button class="btn btn-secondary" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
+          </div>
+          <div id="src-info" style="font-size: 11px; color: #86efac; margin-top: -6px; margin-bottom: 12px; display: none;"></div>
           <div id="img-badge" style="margin-bottom:14px;display:none;"></div>
+          
+          <div class="field-label">Dataset Type</div>
+          <select id="dataset-type-select" class="field-select glass-input" style="margin-bottom:14px;">
+            <option value="bbox">Bounding Box (YOLO Object Detection)</option>
+            <option value="polygon">Polygon (YOLO Instance Segmentation)</option>
+          </select>
           
           <div class="field-label">Split Ratio <span class="hint">(Train / Valid / Test)</span></div>
           <div class="ratio-row glass-ratios">
@@ -157,18 +179,45 @@
             <option value="">Any Class</option>
           </select>
           <button class="btn btn-secondary" onclick="loadGridPage(1)" style="padding:6px 12px;">Refresh</button>
-          <button class="btn btn-primary" id="btn-export-dataset" onclick="window.location.href='/api/export'" style="padding:6px 12px;"><i class="fa-solid fa-file-export"></i> Export Dataset</button>
+          <select id="export-format" class="field-select" style="width:140px; padding:6px 10px;">
+            <option value="yolo">YOLO Format</option>
+            <option value="coco">COCO Format</option>
+          </select>
+          <button class="btn btn-primary" id="btn-export-dataset" style="padding:6px 12px;"><i class="fa-solid fa-file-export"></i> Export Dataset</button>
         </div>
         <div class="grid-pagination">
           <button class="btn btn-secondary" id="grid-prev" onclick="loadGridPage(gridPage-1)"
             style="padding:6px 12px;">← Prev</button>
-          <span id="grid-page-info">Page 1 / 1</span>
+          <span id="grid-page-info" style="color: #94a3b8; font-size: 13px; font-weight: 600; margin: 0 10px;">Page 1 / 1</span>
           <button class="btn btn-secondary" id="grid-next" onclick="loadGridPage(gridPage+1)"
             style="padding:6px 12px;">Next →</button>
         </div>
       </div>
-      <div class="grid-content" id="grid-content">
-        <!-- Cards go here -->
+      <div class="grid-scroll-area">
+        <div class="grid-content" id="grid-content">
+          <!-- Cards go here -->
+        </div>
+      </div>
+      
+      <!-- GRID FOOTER -->
+      <div class="grid-footer" style="padding: 10px 20px; background: #12151f; border-top: 1px solid #1e2535; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <div class="grid-controls">
+          <span style="color:#94a3b8; font-size:12px; margin-right:8px; font-weight:600;">Images per page:</span>
+          <select id="grid-limit" class="field-select" style="width:80px; padding:6px 10px;" onchange="loadGridPage(1)">
+            <option value="20">20</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+          </select>
+        </div>
+        <div class="grid-pagination">
+          <button class="btn btn-secondary" id="grid-prev-btm" onclick="loadGridPage(gridPage-1)"
+            style="padding:6px 12px;">← Prev</button>
+          <span id="grid-page-info-btm" style="color: #94a3b8; font-size: 13px; font-weight: 600; margin: 0 10px;">Page 1 / 1</span>
+          <button class="btn btn-secondary" id="grid-next-btm" onclick="loadGridPage(gridPage+1)"
+            style="padding:6px 12px;">Next →</button>
+        </div>
       </div>
     </div>
 
@@ -335,11 +384,27 @@
         <div class="train-field">
           <label>Base Model</label>
           <select id="tr-model">
-            <option value="yolov8n.pt">YOLOv8 Nano (fastest)</option>
-            <option value="yolov8s.pt">YOLOv8 Small</option>
-            <option value="yolov8m.pt" selected>YOLOv8 Medium</option>
-            <option value="yolov8l.pt">YOLOv8 Large</option>
-            <option value="yolov8x.pt">YOLOv8 XLarge (best)</option>
+            <optgroup label="YOLO26 (Next-Gen)">
+              <option value="yolo26n.pt">YOLO26 Nano</option>
+              <option value="yolo26s.pt">YOLO26 Small</option>
+              <option value="yolo26m.pt">YOLO26 Medium</option>
+              <option value="yolo26l.pt">YOLO26 Large</option>
+              <option value="yolo26x.pt">YOLO26 XLarge</option>
+            </optgroup>
+            <optgroup label="YOLO11">
+              <option value="yolo11n.pt">YOLO11 Nano</option>
+              <option value="yolo11s.pt">YOLO11 Small</option>
+              <option value="yolo11m.pt">YOLO11 Medium</option>
+              <option value="yolo11l.pt">YOLO11 Large</option>
+              <option value="yolo11x.pt">YOLO11 XLarge</option>
+            </optgroup>
+            <optgroup label="YOLOv8">
+              <option value="yolov8n.pt">YOLOv8 Nano (fastest)</option>
+              <option value="yolov8s.pt">YOLOv8 Small</option>
+              <option value="yolov8m.pt" selected>YOLOv8 Medium</option>
+              <option value="yolov8l.pt">YOLOv8 Large</option>
+              <option value="yolov8x.pt">YOLOv8 XLarge (best)</option>
+            </optgroup>
           </select>
         </div>
         <div class="train-field">
@@ -417,10 +482,19 @@
       <p style="font-size: 12px; color:#94a3b8; margin-bottom: 12px;">Select a source folder to load images into the
         dataset.</p>
 
+      <div class="field-label">Dataset Folder</div>
+      <div style="display:flex; gap:8px; margin-bottom: 16px;">
+        <input type="text" id="exist-src-input" class="glass-input" style="flex:1;" placeholder="Select dataset folder..." readonly />
+        <button class="btn btn-secondary" id="btn-browse-exist"><i class="fa-solid fa-folder"></i></button>
+      </div>
+      <div id="exist-info" style="font-size: 11px; color: #86efac; margin-top: -10px; margin-bottom: 12px; display: none;"></div>
+
       <div class="field-label">Source Folder</div>
-      <select id="add-src-select" class="field-select" style="margin-bottom: 16px;">
-        <option value="">— select source folder —</option>
-      </select>
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <input type="text" id="add-src-input" class="glass-input" style="flex:1;" placeholder="Folder path..." readonly />
+        <button class="btn btn-secondary" id="btn-browse-add-src"><i class="fa-solid fa-folder"></i></button>
+      </div>
+      <div id="new-info" style="font-size: 11px; color: #86efac; margin-top: -10px; margin-bottom: 12px; display: none;"></div>
 
       <div id="add-ingest-prog" class="prog-wrap">
         <div class="prog-header"><span>Copying...</span><span id="add-ip-num">0 / 0</span></div>
