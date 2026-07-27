@@ -317,8 +317,14 @@
 
       <!-- BOXES PANEL -->
       <div class="rpanel active" id="panel-boxes">
-        <div id="boxes-panel" style="flex:1;overflow-y:auto;"></div>
-        <button id="add-box-btn"><i class="fa-solid fa-plus"></i> Add Box</button>
+        <div id="boxes-panel" style="flex:1;overflow-y:auto; border-bottom: 1px solid #1e2535;"></div>
+        <div id="history-panel" style="height: 120px; overflow-y: auto; background: #0b0f19; border-bottom: 1px solid #1e2535; padding: 8px;">
+          <div style="font-size: 10px; color: #64748b; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">
+            Action History (Image)
+          </div>
+          <div id="history-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+        </div>
+        <button id="add-box-btn" style="margin-top: 8px;"><i class="fa-solid fa-plus"></i> Add Box</button>
         <div class="rfoot">
           <button class="btn btn-primary btn-full" id="btn-save"><i class="fa-solid fa-floppy-disk"></i> Save
             Annotations</button>

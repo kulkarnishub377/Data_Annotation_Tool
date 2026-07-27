@@ -29,9 +29,13 @@ setInterval(() => {
 
 // Undo/Redo Stack (Command Pattern)
 class StateSnapshotCommand {
-    constructor(prevBoxes, newBoxes) {
+    constructor(prevBoxes, newBoxes, actionName) {
         this.prevBoxes = JSON.parse(JSON.stringify(prevBoxes));
         this.newBoxes = JSON.parse(JSON.stringify(newBoxes));
+        this.actionName = actionName || "Edited annotations";
+        
+        const now = new Date();
+        this.timestamp = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     }
     execute() { boxes = JSON.parse(JSON.stringify(this.newBoxes)); }
     undo() { boxes = JSON.parse(JSON.stringify(this.prevBoxes)); }
@@ -39,18 +43,19 @@ class StateSnapshotCommand {
 
 class CommandManager {
     constructor() { this.undoStack = []; this.redoStack = []; this.maxHistory = 50; }
-    pushState(prevBoxes, newBoxes) {
+    pushState(prevBoxes, newBoxes, actionName) {
         if (JSON.stringify(prevBoxes) === JSON.stringify(newBoxes)) return;
-        this.undoStack.push(new StateSnapshotCommand(prevBoxes, newBoxes));
+        this.undoStack.push(new StateSnapshotCommand(prevBoxes, newBoxes, actionName));
         if (this.undoStack.length > this.maxHistory) this.undoStack.shift();
         this.redoStack = [];
+        renderHistoryPanel();
     }
     undo() {
         if (this.undoStack.length === 0) return;
         const cmd = this.undoStack.pop();
         cmd.undo();
         this.redoStack.push(cmd);
-        selectedBoxes = []; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        selectedBoxes = []; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas(); renderHistoryPanel();
         showToast("↩ Undo");
     }
     redo() {
@@ -58,20 +63,41 @@ class CommandManager {
         const cmd = this.redoStack.pop();
         cmd.execute();
         this.undoStack.push(cmd);
-        selectedBoxes = []; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
+        selectedBoxes = []; dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas(); renderHistoryPanel();
         showToast("↪ Redo");
     }
-    clear() { this.undoStack = []; this.redoStack = []; }
+    clear() { this.undoStack = []; this.redoStack = []; renderHistoryPanel(); }
 }
 const cmdManager = new CommandManager();
+
+function renderHistoryPanel() {
+    const list = document.getElementById("history-list");
+    if (!list) return;
+    list.innerHTML = "";
+    if (cmdManager.undoStack.length === 0) {
+        list.innerHTML = '<div style="font-size:11px;color:#475569;">No edits yet for this image.</div>';
+        return;
+    }
+    cmdManager.undoStack.forEach((cmd, i) => {
+        const item = document.createElement("div");
+        item.style.fontSize = "11px";
+        item.style.color = i === cmdManager.undoStack.length - 1 ? "#86efac" : "#94a3b8";
+        item.style.fontFamily = "'JetBrains Mono', monospace";
+        item.innerHTML = `<span style="color:#475569;">${cmd.timestamp}</span> &nbsp; ${cmd.actionName}`;
+        list.appendChild(item);
+    });
+    // Auto scroll to bottom
+    const panel = document.getElementById("history-panel");
+    if (panel) panel.scrollTop = panel.scrollHeight;
+}
 
 let _pendingUndoState = null;
 function pushUndo() {
     _pendingUndoState = JSON.parse(JSON.stringify(boxes));
 }
-function commitUndo() {
+function commitUndo(actionName = "Edited annotations") {
     if (_pendingUndoState) {
-        cmdManager.pushState(_pendingUndoState, boxes);
+        cmdManager.pushState(_pendingUndoState, boxes, actionName);
         _pendingUndoState = null;
     }
 }
@@ -701,7 +727,7 @@ canvas.addEventListener("mouseup", e => {
             n.y = Math.max(n.h / 2, Math.min(1 - n.h / 2, n.y));
             pushUndo();
             boxes.push({ id: boxes.length, cls: 0, ...n });
-            commitUndo();
+            commitUndo("Drew new box");
             selectedBox = boxes.length - 1; dirty = true;
             // Show inline popup
             showClassPopup(drag.ds.x, drag.ds.y, x, y);
@@ -709,7 +735,7 @@ canvas.addEventListener("mouseup", e => {
         setDrawMode(false);
     } else {
         triggerAutoSave();
-        commitUndo();
+        commitUndo("Moved/Resized box");
     }
     drag = { on: false }; updateBoxPanel(); renderCanvas();
 });
@@ -759,8 +785,10 @@ function showClassPopup(x1, y1, x2, y2) {
 
 document.getElementById("popup-confirm").addEventListener("click", () => {
     if (boxes.length > 0 && selectedBoxes.length > 0) {
+        pushUndo();
         const cls = parseInt(document.getElementById("popup-cls-sel").value);
         selectedBoxes.forEach(i => boxes[i].cls = cls);
+        commitUndo("Set class from popup");
         dirty = true;
         triggerAutoSave();
         updateBoxPanel(); renderCanvas();
@@ -772,7 +800,7 @@ document.getElementById("popup-cancel").addEventListener("click", () => {
     if (boxes.length > 0 && selectedBoxes.length > 0) {
         pushUndo();
         boxes = boxes.filter((_, i) => !selectedBoxes.includes(i));
-        commitUndo();
+        commitUndo("Canceled new box");
         selectedBoxes = boxes.length > 0 ? [boxes.length - 1] : [];
     }
     document.getElementById("class-popup").style.display = "none";
@@ -828,7 +856,7 @@ window.addEventListener("keydown", e => {
         pushUndo(); 
         boxes = boxes.filter((_, i) => !selectedBoxes.includes(i));
         selectedBoxes = [];
-        commitUndo(); 
+        commitUndo("Deleted box(es)"); 
         dirty = true; updateBoxPanel(); renderCanvas();
     }
 
@@ -838,21 +866,21 @@ window.addEventListener("keydown", e => {
         pushUndo();
         selectedBoxes.forEach(i => boxes[i].cls = num - 1);
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
-        commitUndo();
+        commitUndo("Changed class via hotkey");
     }
 
     // Q/E Class Cycling Hotkeys
     if (e.key === "e" && selectedBoxes.length > 0) {
         pushUndo();
         selectedBoxes.forEach(i => boxes[i].cls = (boxes[i].cls + 1) % CLASS_NAMES.length);
+        commitUndo("Cycled class via hotkey (E)");
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
-        commitUndo();
     }
     if (e.key === "q" && selectedBoxes.length > 0) {
         pushUndo();
         selectedBoxes.forEach(i => boxes[i].cls = (boxes[i].cls - 1 + CLASS_NAMES.length) % CLASS_NAMES.length);
+        commitUndo("Cycled class via hotkey (Q)");
         dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
-        commitUndo();
     }
 });
 
@@ -1144,7 +1172,7 @@ function updateBoxPanel() {
             const body = document.createElement("div"); body.className = "bcb";
             const sel = document.createElement("select"); sel.className = "cls-sel";
             CLASS_NAMES.forEach((cn, ci) => { const o = document.createElement("option"); o.value = ci; o.textContent = `[${ci + 1}] ${cn}`; if (ci === b.cls) o.selected = true; sel.appendChild(o); });
-            sel.addEventListener("change", () => { pushUndo(); boxes[i].cls = parseInt(sel.value); cls.textContent = `[${boxes[i].cls + 1}] ${CLASS_NAMES[boxes[i].cls]}`; num.style.background = COLORS[boxes[i].cls % COLORS.length]; dirty = true; triggerAutoSave(); renderCanvas(); });
+            sel.addEventListener("change", () => { pushUndo(); boxes[i].cls = parseInt(sel.value); cls.textContent = `[${boxes[i].cls + 1}] ${CLASS_NAMES[boxes[i].cls]}`; num.style.background = COLORS[boxes[i].cls % COLORS.length]; commitUndo("Changed class via dropdown"); dirty = true; triggerAutoSave(); renderCanvas(); });
             const coords = document.createElement("div"); coords.className = "bcoords";
             coords.textContent = `x:${b.x.toFixed(4)} y:${b.y.toFixed(4)} w:${b.w.toFixed(4)} h:${b.h.toFixed(4)}`;
             body.append(sel, coords); card.append(body);
@@ -1155,6 +1183,7 @@ function updateBoxPanel() {
 
 function deleteBox(idx) {
     boxes.splice(idx, 1); if (selectedBox >= boxes.length) selectedBox = boxes.length - 1;
+    commitUndo("Deleted box from panel");
     dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
 }
 
