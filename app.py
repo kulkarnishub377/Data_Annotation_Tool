@@ -344,6 +344,23 @@ def image_path(split, name):
     return secure_path(OUTPUT_DIR, split, "images", name)
 
 
+def calculate_iou(box1, box2):
+    """Calculate Intersection over Union (IoU) of two bounding boxes (x1, y1, x2, y2)."""
+    x1 = max(box1[0], box2[0])
+    y1 = max(box1[1], box2[1])
+    x2 = min(box1[2], box2[2])
+    y2 = min(box1[3], box2[3])
+
+    inter = max(0, x2 - x1) * max(0, y2 - y1)
+    if inter == 0:
+        return 0.0
+
+    area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
+    union = area1 + area2 - inter
+    return inter / union if union > 0 else 0.0
+
+
 def annotate_one(img_src_path, lbl_dst_path):
     """Run full-res YOLO on one image → write strict YOLO label file."""
     with _model_lock:
@@ -352,9 +369,25 @@ def annotate_one(img_src_path, lbl_dst_path):
     boxes = results[0].boxes
     with open(lbl_dst_path, "w") as f:
         if boxes is not None and len(boxes.cls) > 0:
+            kept_boxes = []
             for i in range(len(boxes.cls)):
                 cls_id = int(boxes.cls[i].item())
                 x, y, w, h = boxes.xywhn[i].tolist()
+                x1, y1, x2, y2 = boxes.xyxyn[i].tolist()
+                
+                # Check for > 90% overlap with already kept boxes
+                is_duplicate = False
+                for kb in kept_boxes:
+                    iou = calculate_iou([x1, y1, x2, y2], kb)
+                    if iou > 0.90:
+                        is_duplicate = True
+                        break
+                        
+                if is_duplicate:
+                    continue
+                    
+                kept_boxes.append([x1, y1, x2, y2])
+                
                 x = max(0.0, min(1.0, x))
                 y = max(0.0, min(1.0, y))
                 w = max(0.000001, min(1.0, w))
@@ -480,13 +513,17 @@ def api_class_stats():
         for fn in os.listdir(lbl_dir):
             if not fn.endswith(".txt"):
                 continue
-            with open(os.path.join(lbl_dir, fn)) as f:
-                for line in f:
-                    parts = line.strip().split()
-                    if len(parts) >= 5:
-                        cls_id = int(parts[0])
-                        name = _class_names[cls_id] if cls_id < len(_class_names) else str(cls_id)
-                        counts[name] = counts.get(name, 0) + 1
+            try:
+                with open(os.path.join(lbl_dir, fn)) as f:
+                    for line in f:
+                        parts = line.strip().split()
+                        if len(parts) >= 5:
+                            cls_id = int(parts[0])
+                            name = _class_names[cls_id] if cls_id < len(_class_names) else str(cls_id)
+                            counts[name] = counts.get(name, 0) + 1
+            except (FileNotFoundError, OSError):
+                # File might have been moved/deleted by split/cleanup operations
+                pass
     return jsonify(counts)
 
 

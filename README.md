@@ -1,4 +1,4 @@
-# Data Annotation Tool
+# Data_Annotation_Tool
 
 ![App Overview](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge) ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python) ![Flask](https://img.shields.io/badge/Flask-Backend-black?style=for-the-badge&logo=flask) ![YOLOv8](https://img.shields.io/badge/YOLOv8-Integration-yellow?style=for-the-badge)
 
