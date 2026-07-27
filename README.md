@@ -1,8 +1,12 @@
-# Data_Annotation_Tool
+# Free Open Source Data Annotation Tool for Computer Vision 🚀
 
-![App Overview](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge) ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python) ![Flask](https://img.shields.io/badge/Flask-Backend-black?style=for-the-badge&logo=flask) ![YOLOv8](https://img.shields.io/badge/YOLOv8-Integration-yellow?style=for-the-badge)
+![App Overview](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge) ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python) ![Flask](https://img.shields.io/badge/Flask-Backend-black?style=for-the-badge&logo=flask) ![YOLOv8](https://img.shields.io/badge/YOLO-Integration-yellow?style=for-the-badge) ![Open Source](https://img.shields.io/badge/Open_Source-100%25-orange?style=for-the-badge)
 
-A complete, professional-grade, end-to-end web application for auto-annotating vehicle datasets, reviewing and editing annotations, splitting datasets, and directly training YOLO models from a sleek, intuitive, and highly responsive UI.
+**Data Annotation Tool** is a professional-grade, 100% free and open-source web application designed for fast, accurate, and private computer vision labeling. Whether you are building bounding boxes for Object Detection or drawing polygons for Instance Segmentation, this tool provides an end-to-end pipeline: from auto-annotating datasets using YOLO models to reviewing, splitting, and directly training models right from a sleek, intuitive UI.
+
+> **Why choose this over CVAT or Roboflow?** Zero cloud lock-in, zero subscription fees, and absolute privacy. Your datasets never leave your local machine.
+
+*Keywords: Data Annotation Tool, Open Source Labeling, Computer Vision, YOLOv8 Annotation, YOLO11 Training, YOLO26, Bounding Box Tool, Polygon Segmentation, Image Labeling Software, AI Auto-Annotation.*
 
 > **🎯 Perfect for Fine-Tuning:** Seamlessly load your old custom models to continue training and fine-tuning them on entirely new datasets directly from the browser!
 
@@ -155,6 +159,16 @@ To verify your environment is correctly configured, run the included test suite:
 ```bash
 python -m unittest discover tests
 ```
+
+---
+
+## 👨‍💻 Author
+
+**Shubham Kulkarni**
+- **Email:** [kulkarnishub377@gmail.com](mailto:kulkarnishub377@gmail.com)
+- **LinkedIn:** [linkedin.com/in/shubhkulk21](https://linkedin.com/in/shubhkulk21)
+- **GitHub:** [github.com/kulkarnishub377](https://github.com/kulkarnishub377)
+- **Portfolio:** [kulkarnishub377.github.io](https://kulkarnishub377.github.io)
 
 ---
 *Data Annotation Tool — Built for high-speed, professional computer vision workflows.*
