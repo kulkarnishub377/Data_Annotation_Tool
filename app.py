@@ -14,21 +14,42 @@ from werkzeug.utils import secure_filename
 import uuid
 import tempfile
 import re
+import configparser
 from dotenv import load_dotenv
 import tkinter as tk
 from tkinter import filedialog
 
 load_dotenv()
 
+# ─── CONFIGURATION ───────────────────────────────────────────────────────────
+config = configparser.ConfigParser()
+config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini")
+config.read(config_path)
 
 # ─── APP ─────────────────────────────────────────────────────────────────────
 app = Flask(__name__, template_folder='.')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-BASE_DIR    = os.environ.get("BASE_DIR", r"D:\model_train")
+if config.has_option("Paths", "BASE_DIR"):
+    BASE_DIR = config.get("Paths", "BASE_DIR")
+else:
+    BASE_DIR = os.environ.get("BASE_DIR", r"D:\model_train")
+
+if config.has_option("Paths", "MODELS_DIR"):
+    MODELS_DIR = config.get("Paths", "MODELS_DIR")
+else:
+    MODELS_DIR = BASE_DIR
+
 _current_dataset_name = "default"
-OUTPUT_DIR  = os.environ.get("OUTPUT_DIR", os.path.join(BASE_DIR, f"dataset_{_current_dataset_name}"))
-CONF_THRESH = float(os.environ.get("CONF_THRESH", "0.25"))
+if config.has_option("Paths", "OUTPUT_DIR"):
+    OUTPUT_DIR = config.get("Paths", "OUTPUT_DIR")
+else:
+    OUTPUT_DIR = os.environ.get("OUTPUT_DIR", os.path.join(BASE_DIR, f"dataset_{_current_dataset_name}"))
+
+if config.has_option("Settings", "CONF_THRESH"):
+    CONF_THRESH = float(config.get("Settings", "CONF_THRESH"))
+else:
+    CONF_THRESH = float(os.environ.get("CONF_THRESH", "0.25"))
 
 VALID_SPLITS = {"train", "valid", "test"}
 
@@ -529,9 +550,12 @@ def api_set_model():
     explicit_device = data.get("device", "auto")
 
     if new_path and not os.path.exists(new_path):
-        candidate = os.path.join(BASE_DIR, new_path)
-        if os.path.exists(candidate):
-            new_path = candidate
+        candidate_models = os.path.join(MODELS_DIR, new_path)
+        candidate_base = os.path.join(BASE_DIR, new_path)
+        if os.path.exists(candidate_models):
+            new_path = candidate_models
+        elif os.path.exists(candidate_base):
+            new_path = candidate_base
         else:
             return jsonify({"error": f"Model not found: {new_path}"}), 400
 
@@ -1142,11 +1166,14 @@ def api_train_status():
 
 @app.route("/api/models")
 def api_models():
-    # Scan BASE_DIR for all supported model formats
-    all_models = [
-        f for f in os.listdir(BASE_DIR)
-        if Path(f).suffix.lower() in MODEL_EXTS
-    ]
+    # Scan MODELS_DIR for all supported model formats
+    all_models = []
+    if os.path.exists(MODELS_DIR):
+        for root, _, files in os.walk(MODELS_DIR):
+            for f in files:
+                if Path(f).suffix.lower() in MODEL_EXTS:
+                    rel_path = os.path.relpath(os.path.join(root, f), MODELS_DIR)
+                    all_models.append(rel_path.replace("\\", "/"))
     presets = [
         "yolov8n.pt", "yolov8s.pt", "yolov8m.pt", "yolov8l.pt", "yolov8x.pt",
         "yolo11n.pt", "yolo11s.pt", "yolo11m.pt", "yolo11l.pt", "yolo11x.pt",
