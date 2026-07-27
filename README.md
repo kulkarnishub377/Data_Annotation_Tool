@@ -6,6 +6,9 @@
 
 > **Why choose this over CVAT or Roboflow?** Zero cloud lock-in, zero subscription fees, and absolute privacy. Your datasets never leave your local machine.
 
+- **Dataset Health Dashboard:** Instantly scans your entire dataset for empty annotations, corrupt files, microscopic bounding boxes, and out-of-bounds coordinates to catch training errors early. Filter visually directly from the dashboard!
+- **Zero Configuration Setup:** Load datasets instantly via web UI without editing paths in code.
+
 *Keywords: Data Annotation Tool, Open Source Labeling, Computer Vision, YOLOv8 Annotation, YOLO11 Training, YOLO26, Bounding Box Tool, Polygon Segmentation, Image Labeling Software, AI Auto-Annotation.*
 
 > **🎯 Perfect for Fine-Tuning:** Seamlessly load your old custom models to continue training and fine-tuning them on entirely new datasets directly from the browser!

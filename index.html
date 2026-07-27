@@ -180,7 +180,6 @@
           </select>
           <button class="btn btn-secondary" onclick="loadGridPage(1)" style="padding:6px 12px;">Refresh</button>
           <button class="btn btn-secondary" onclick="openHealthDashboard()" style="padding:6px 12px;"><i class="fa-solid fa-heart-pulse"></i> Dataset Health</button>
-          <button class="btn btn-secondary" onclick="openVersionsModal()" style="padding:6px 12px;"><i class="fa-solid fa-code-commit"></i> Snapshots</button>
           <select id="export-format" class="field-select" style="width:140px; padding:6px 10px;">
             <option value="yolo">YOLO Format</option>
             <option value="coco">COCO Format</option>
@@ -598,28 +597,7 @@
     </div>
   </div>
 
-  <!-- VERSIONS MODAL -->
-  <div class="modal-overlay" id="versions-modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-code-commit"></i> Dataset Snapshots</h2>
-      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">Save the current state of your annotations and database. You can instantly restore these snapshots later if you make a mistake.</p>
-      
-      <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <input type="text" id="version-msg" class="field-input" placeholder="Snapshot description (e.g., 'Finished 500 images')" style="flex:1;">
-        <button class="btn btn-primary" id="btn-save-version"><i class="fa-solid fa-floppy-disk"></i> Save Snapshot</button>
-      </div>
 
-      <h3 style="font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Saved Snapshots</h3>
-      
-      <div id="versions-list" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; padding-right:6px;">
-        <!-- Dynamically populated rows -->
-      </div>
-
-      <div class="modal-actions" style="margin-top:20px;">
-        <button class="btn btn-secondary" id="btn-versions-close">Close</button>
-      </div>
-    </div>
-  </div>
 
   <script src="app.js"></script>
 </body>
