@@ -728,7 +728,7 @@ canvas.addEventListener("mouseup", e => {
             pushUndo();
             boxes.push({ id: boxes.length, cls: 0, ...n });
             commitUndo("Drew new box");
-            selectedBox = boxes.length - 1; dirty = true;
+            selectedBoxes = [boxes.length - 1]; dirty = true;
             // Show inline popup
             showClassPopup(drag.ds.x, drag.ds.y, x, y);
         }
@@ -1159,16 +1159,24 @@ function updateBoxPanel() {
         return;
     }
     boxes.forEach((b, i) => {
-        const card = document.createElement("div"); card.className = "box-card" + (i === selectedBox ? " sel" : "");
+        const card = document.createElement("div"); card.className = "box-card" + (selectedBoxes.includes(i) ? " sel" : "");
         const hdr = document.createElement("div"); hdr.className = "bch";
-        hdr.addEventListener("click", () => { selectedBox = i; updateBoxPanel(); renderCanvas(); });
+        hdr.addEventListener("click", (e) => { 
+            if (e.shiftKey) {
+                if (selectedBoxes.includes(i)) selectedBoxes = selectedBoxes.filter(x => x !== i);
+                else selectedBoxes.push(i);
+            } else {
+                selectedBoxes = [i]; 
+            }
+            updateBoxPanel(); renderCanvas(); 
+        });
         const num = document.createElement("div"); num.className = "bnum";
         num.textContent = i + 1; num.style.background = COLORS[b.cls % COLORS.length];
         const cls = document.createElement("div"); cls.className = "bcls"; cls.textContent = `[${b.cls + 1}] ${CLASS_NAMES[b.cls] || `cls${b.cls}`}`;
         const del = document.createElement("button"); del.className = "bdel"; del.innerHTML = "✕";
         del.addEventListener("click", e => { e.stopPropagation(); pushUndo(); deleteBox(i); });
         hdr.append(num, cls, del); card.append(hdr);
-        if (i === selectedBox) {
+        if (selectedBoxes.length === 1 && selectedBoxes.includes(i)) {
             const body = document.createElement("div"); body.className = "bcb";
             const sel = document.createElement("select"); sel.className = "cls-sel";
             CLASS_NAMES.forEach((cn, ci) => { const o = document.createElement("option"); o.value = ci; o.textContent = `[${ci + 1}] ${cn}`; if (ci === b.cls) o.selected = true; sel.appendChild(o); });
@@ -1182,7 +1190,8 @@ function updateBoxPanel() {
 }
 
 function deleteBox(idx) {
-    boxes.splice(idx, 1); if (selectedBox >= boxes.length) selectedBox = boxes.length - 1;
+    boxes.splice(idx, 1);
+    selectedBoxes = [];
     commitUndo("Deleted box from panel");
     dirty = true; triggerAutoSave(); updateBoxPanel(); renderCanvas();
 }
@@ -1326,6 +1335,27 @@ document.querySelectorAll(".ftab").forEach(tab => {
 });
 
 document.getElementById("search").addEventListener("input", renderImageList);
+
+document.getElementById("btn-fullscreen")?.addEventListener("click", () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable fullscreen mode: ${err.message}`);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+document.addEventListener("fullscreenchange", () => {
+    const icon = document.querySelector("#btn-fullscreen i");
+    if (icon) {
+        if (document.fullscreenElement) {
+            icon.className = "fa-solid fa-compress";
+        } else {
+            icon.className = "fa-solid fa-expand";
+        }
+    }
+});
 document.getElementById("btn-draw").addEventListener("click", () => setDrawMode(!drawMode));
 document.getElementById("btn-next-unanno").addEventListener("click", jumpToNextUnannotated);
 
@@ -1336,7 +1366,7 @@ document.getElementById("add-box-btn").addEventListener("click", () => {
     if (currentIndex < 0) return;
     pushUndo();
     boxes.push({ id: boxes.length, cls: 0, x: 0.5, y: 0.5, w: 0.15, h: 0.15 });
-    selectedBox = boxes.length - 1; dirty = true; updateBoxPanel(); renderCanvas();
+    selectedBoxes = [boxes.length - 1]; dirty = true; updateBoxPanel(); renderCanvas();
 });
 document.getElementById("nav-prev").addEventListener("click", () => navigateTo(currentIndex - 1));
 document.getElementById("nav-next").addEventListener("click", () => navigateTo(currentIndex + 1));
