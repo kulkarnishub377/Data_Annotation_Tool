@@ -21,7 +21,7 @@
   <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
   <div id="setup-screen" class="screen setup-modern">
     <div class="setup-header pos-rel-max-900">
-      <button class="btn btn-secondary btn-glow btn-circle-help" id="btn-help-setup"><i class="fa-solid fa-question"></i></button>
+      <button class="btn btn-primary btn-glow btn-circle-help" id="btn-help-setup"><i class="fa-solid fa-question"></i></button>
       <div class="logo-icon-lg"><i class="fa-solid fa-object-group"></i></div>
       <h1>Data Annotation Tool</h1>
       <p>Professional Computer Vision Workflows</p>
@@ -71,10 +71,10 @@
           </select>
           <div class="d-flex gap-8 mb-16">
             <input type="text" id="existing-dataset-input" class="glass-input flex-1" placeholder="Or browse custom folder..." readonly />
-            <button class="btn btn-secondary" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
+            <button class="btn btn-primary btn-glow" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
           </div>
           <div id="existing-info" class="text-green-info d-none"></div>
-          <button class="btn btn-primary btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
+          <button class="btn btn-primary btn-glow btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
         </div>
         
         <div class="divider-text"><span>OR</span></div>
@@ -83,7 +83,7 @@
           <div class="field-label">Create New Dataset (Select Source)</div>
           <div class="d-flex gap-8 mb-12">
             <input type="text" id="src-input" class="glass-input flex-1" placeholder="Source folder path..." readonly />
-            <button class="btn btn-secondary" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
+            <button class="btn btn-primary btn-glow" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
           </div>
           <div id="src-info" class="text-green-info d-none"></div>
           <div id="img-badge" class="mb-14 d-none"></div>
@@ -114,7 +114,7 @@
     
     <div id="existing-banner" class="glass-banner d-none">
       <span id="existing-text">Dataset found</span>
-      <button class="btn btn-primary" id="btn-open">Open Annotator →</button>
+      <button class="btn btn-primary btn-glow" id="btn-open">Open Annotator →</button>
     </div>
   </div>
 
