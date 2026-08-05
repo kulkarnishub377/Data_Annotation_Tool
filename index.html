@@ -265,6 +265,19 @@
           <input type="range" id="bc-contrast" min="0.3" max="2.5" step="0.05" value="1">
           <button id="bc-contrast-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
         </div>
+        <!-- Extra Filters -->
+        <div class="bc-wrap" title="Extra Filters">
+          <select id="extra-filter-type" style="background:transparent; color:#94a3b8; border:none; outline:none; cursor:pointer; font-size:13px; font-weight:600;">
+             <option value="none" style="background:#0f172a; color:#fff">Filter</option>
+             <option value="saturate" style="background:#0f172a; color:#fff">Saturate</option>
+             <option value="grayscale" style="background:#0f172a; color:#fff">Grayscale</option>
+             <option value="invert" style="background:#0f172a; color:#fff">Invert</option>
+             <option value="sepia" style="background:#0f172a; color:#fff">Sepia</option>
+             <option value="blur" style="background:#0f172a; color:#fff">Blur</option>
+          </select>
+          <input type="range" id="extra-filter-val" min="0" max="100" step="1" value="0">
+          <button id="extra-filter-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
         <button class="tbtn red" id="btn-del-img" title="Delete image"><i class="fa-solid fa-trash"></i> Del</button>
         <button id="btn-save-next" title="Save & go next (Enter)"><i class="fa-solid fa-check"></i> Save & Next</button>
       </div>

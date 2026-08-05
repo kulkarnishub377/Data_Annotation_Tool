@@ -121,6 +121,7 @@ let isMouseInCanvas = false;
 
 // Brightness/Contrast
 let bcBright = 1.0, bcContrast = 1.0;
+let extraFilterType = "none", extraFilterVal = 0;
 
 // Pre-load next images
 let _preloadSlots = [new Image(), new Image(), new Image()];
@@ -540,8 +541,13 @@ function _doRender() {
     const { ox, oy, scale } = getTransform();
     const dW = imgNatW * scale, dH = imgNatH * scale;
 
-    // Apply brightness/contrast via global composite
-    ctx.filter = `brightness(${bcBright}) contrast(${bcContrast})`;
+    // Apply brightness/contrast/extra filters via global composite
+    let filterStr = `brightness(${bcBright}) contrast(${bcContrast})`;
+    if (extraFilterType !== "none") {
+        if (extraFilterType === "blur") filterStr += ` blur(${extraFilterVal}px)`;
+        else filterStr += ` ${extraFilterType}(${extraFilterVal}%)`;
+    }
+    ctx.filter = filterStr;
     ctx.drawImage(imgEl, ox, oy, dW, dH);
     ctx.filter = "none";
 
@@ -932,6 +938,10 @@ async function loadImage(filename) {
     boxes = []; selectedBoxes = []; dirty = false;
     cmdManager.clear();
     zoomScale = 1.0; panX = 0; panY = 0;
+    bcBright = 1.0; document.getElementById("bc-bright").value = 1;
+    bcContrast = 1.0; document.getElementById("bc-contrast").value = 1;
+    extraFilterType = "none"; document.getElementById("extra-filter-type").value = "none";
+    extraFilterVal = 0; document.getElementById("extra-filter-val").value = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     showLoading("Auto-annotating…");
     document.getElementById("canvas-filename").textContent = filename;
@@ -1224,6 +1234,34 @@ document.getElementById("bc-bright").addEventListener("input", e => { bcBright =
 document.getElementById("bc-contrast").addEventListener("input", e => { bcContrast = parseFloat(e.target.value); renderCanvas(); });
 document.getElementById("bc-bright-reset").addEventListener("click", () => { bcBright = 1; document.getElementById("bc-bright").value = 1; renderCanvas(); });
 document.getElementById("bc-contrast-reset").addEventListener("click", () => { bcContrast = 1; document.getElementById("bc-contrast").value = 1; renderCanvas(); });
+
+const fType = document.getElementById("extra-filter-type");
+const fVal = document.getElementById("extra-filter-val");
+fType.addEventListener("change", e => {
+    const v = e.target.value;
+    if (v === "blur") { fVal.max = 20; fVal.value = 0; }
+    else if (v === "saturate") { fVal.max = 300; fVal.value = 100; }
+    else { fVal.max = 100; fVal.value = 0; }
+    extraFilterType = v;
+    extraFilterVal = parseFloat(fVal.value);
+    renderCanvas();
+});
+fVal.addEventListener("input", e => {
+    extraFilterVal = parseFloat(e.target.value);
+    if (extraFilterType === "none") {
+        fType.value = "saturate";
+        fType.dispatchEvent(new Event("change"));
+    } else {
+        renderCanvas();
+    }
+});
+document.getElementById("extra-filter-reset").addEventListener("click", () => {
+    fType.value = "none";
+    extraFilterType = "none";
+    extraFilterVal = 0;
+    fVal.value = 0;
+    renderCanvas();
+});
 
 // ─── ZOOM BUTTONS ────────────────────────────────────────────────────────────
 document.getElementById("btn-zoom-in").addEventListener("click", () => { zoomScale = Math.min(20, zoomScale * 1.3); renderCanvas(); });
