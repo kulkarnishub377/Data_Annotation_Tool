@@ -336,6 +336,7 @@
     .logo-text {
         background: linear-gradient(to right, #60a5fa, #a78bfa);
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
@@ -1838,4 +1839,146 @@
         color: #86efac;
         font-weight: 600;
         font-size: 14px;
+    }
+
+    /* --- EXTRACTED INLINE STYLES (UTILITIES) --- */
+    .pos-rel-max-900 { position: relative; max-width: 900px; width: 100%; }
+    .btn-circle-help { position: absolute; right: 0; top: 0; border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; }
+    .svg-transition { transition: stroke-dashoffset .4s !important; }
+    .mx-10 { margin-left: 10px !important; margin-right: 10px !important; }
+    .mb-6 { margin-bottom: 6px !important; }
+    .mt-10 { margin-top: 10px !important; }
+    .text-slate-dark { color: #475569 !important; }
+    .text-slate-darker { color: #374151 !important; }
+    .text-blue { color: #3b82f6 !important; }
+    .text-green { color: #22c55e !important; }
+    .text-orange { color: #f59e0b !important; }
+    .lh-15 { line-height: 1.5 !important; }
+    
+    .mt-0 { margin-top: 0 !important; }
+    .mt-4 { margin-top: 4px !important; }
+    .mt-5 { margin-top: 5px !important; }
+    .mt-20 { margin-top: 20px !important; }
+    .mb-20 { margin-bottom: 20px !important; }
+    .ml-20 { margin-left: 20px !important; }
+    .mt-neg-10 { margin-top: -10px !important; }
+    
+    .gap-10 { gap: 10px !important; }
+    
+    .p-20 { padding: 20px !important; }
+    .p-30 { padding: 30px !important; }
+    
+    .fs-14 { font-size: 14px !important; }
+    .fs-16 { font-size: 16px !important; }
+    .fs-18 { font-size: 18px !important; }
+    .fs-24 { font-size: 24px !important; }
+    .fs-32 { font-size: 32px !important; }
+    .fw-800 { font-weight: 800 !important; }
+    
+    .text-gray-light { color: #e2e8f0 !important; }
+    .text-right { text-align: right !important; }
+    .list-none { list-style: none !important; }
+    
+    .lh-16 { line-height: 1.6 !important; }
+    .lh-18 { line-height: 1.8 !important; }
+    
+    .modal-backdrop { z-index: 1000 !important; background: rgba(9,11,16,0.8) !important; }
+    .modal-shadow { box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; }
+    .z-300 { z-index: 300 !important; }
+    .pos-static { position: static !important; }
+    
+    .w-400 { width: 400px !important; }
+    .max-w-600 { max-width: 600px !important; }
+    .max-w-800 { max-width: 800px !important; }
+    .max-h-90vh { max-height: 90vh !important; }
+    
+    .bg-black-trans-20 { background: rgba(0,0,0,0.2) !important; }
+    .border-radius-8 { border-radius: 8px !important; }
+    
+    .mb-10 { margin-bottom: 10px !important; }
+    .my-10 { margin-top: 10px !important; margin-bottom: 10px !important; }
+    .mt-15 { margin-top: 15px !important; }
+    .mb-12 { margin-bottom: 12px !important; }
+    .mb-14 { margin-bottom: 14px !important; }
+    .mb-16 { margin-bottom: 16px !important; }
+    .mt-8 { margin-top: 8px !important; }
+    .mb-8 { margin-bottom: 8px !important; }
+    .my-8 { margin-top: 8px !important; margin-bottom: 8px !important; }
+    .mt-neg-6 { margin-top: -6px !important; }
+    .mr-15 { margin-right: 15px !important; }
+    .mr-12 { margin-right: 12px !important; }
+    .mr-10 { margin-right: 10px !important; }
+    .mr-8 { margin-right: 8px !important; }
+    .ml-8 { margin-left: 8px !important; }
+    .p-0 { padding: 0 !important; }
+    .p-2-6 { padding: 2px 6px !important; }
+    .p-4-10 { padding: 4px 10px !important; }
+    .p-6-10 { padding: 6px 10px !important; }
+    .p-6-12 { padding: 6px 12px !important; }
+    .p-8 { padding: 8px !important; }
+    .p-10 { padding: 10px !important; }
+    .p-12 { padding: 12px !important; }
+    .p-10-20 { padding: 10px 20px !important; }
+    .pr-15 { padding-right: 15px !important; }
+    
+    .flex-1 { flex: 1 !important; }
+    .d-none { display: none; }
+    .d-flex { display: flex; }
+    .flex-col { flex-direction: column !important; }
+    .gap-4 { gap: 4px !important; }
+    .gap-5 { gap: 5px !important; }
+    .gap-8 { gap: 8px !important; }
+    .align-center { align-items: center !important; }
+    .justify-between { justify-content: space-between !important; }
+    .justify-center { justify-content: center !important; }
+    .text-center { text-align: center !important; }
+    
+    .fs-10 { font-size: 10px !important; }
+    .fs-11 { font-size: 11px !important; }
+    .fs-12 { font-size: 12px !important; }
+    .fs-13 { font-size: 13px !important; }
+    .fw-600 { font-weight: 600 !important; }
+    .fw-700 { font-weight: 700 !important; }
+    .text-uppercase { text-transform: uppercase !important; }
+    
+    .text-slate { color: #64748b !important; }
+    .text-green-info { color: #86efac !important; }
+    .text-blue-highlight { color: #3b82f6 !important; }
+    .text-red-warning { color: #f87171 !important; }
+    .text-slate-light { color: #94a3b8 !important; }
+    .text-white { color: white !important; }
+    
+    .bg-dark-panel { background: #0b0f19 !important; }
+    .bg-darker-panel { background: #12151f !important; }
+    .bg-warning-box { background: #1e2535 !important; }
+    .bg-black { background: #000 !important; }
+    
+    .border-b-dark { border-bottom: 1px solid #1e2535 !important; }
+    .border-t-dark { border-top: 1px solid #1e2535 !important; }
+    .border-r-dark { border-right: 1px solid #1e2535 !important; }
+    .border-dark { border: 1px solid #1e2535 !important; }
+    .border-red-dark { border: 1px solid #3b2025 !important; }
+    .border-blue { border: 1px solid #3b82f6 !important; }
+    
+    .border-radius-4 { border-radius: 4px !important; }
+    .border-radius-6 { border-radius: 6px !important; }
+    
+    .w-80 { width: 80px !important; }
+    .w-120 { width: 120px !important; }
+    .w-140 { width: 140px !important; }
+    .h-120 { height: 120px !important; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr !important; }
+    .flex-shrink-0 { flex-shrink: 0 !important; }
+    .overflow-y-auto { overflow-y: auto !important; }
+    .pos-abs { position: absolute !important; }
+    .pos-rel { position: relative !important; }
+    
+    /* Specific overrides */
+    #minimap {
+        bottom: 10px;
+        right: 40px;
+        pointer-events: none;
+        z-index: 20;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }

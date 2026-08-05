@@ -75,7 +75,7 @@ function renderHistoryPanel() {
     if (!list) return;
     list.innerHTML = "";
     if (cmdManager.undoStack.length === 0) {
-        list.innerHTML = '<div style="font-size:11px;color:#475569;">No edits yet for this image.</div>';
+        list.innerHTML = '<div class="fs-11 text-slate-dark">No edits yet for this image.</div>';
         return;
     }
     cmdManager.undoStack.forEach((cmd, i) => {
@@ -83,7 +83,7 @@ function renderHistoryPanel() {
         item.style.fontSize = "11px";
         item.style.color = i === cmdManager.undoStack.length - 1 ? "#86efac" : "#94a3b8";
         item.style.fontFamily = "'JetBrains Mono', monospace";
-        item.innerHTML = `<span style="color:#475569;">${cmd.timestamp}</span> &nbsp; ${cmd.actionName}`;
+        item.innerHTML = `<span class="text-slate-dark">${cmd.timestamp}</span> &nbsp; ${cmd.actionName}`;
         list.appendChild(item);
     });
     // Auto scroll to bottom
@@ -180,11 +180,11 @@ async function initSetup() {
     const devEl = document.getElementById("device-autodetect");
     if (devInfo.cuda && devInfo.cuda.length > 0) {
         const gpuNames = devInfo.cuda.map(g => `GPU ${g.id}: ${g.name} (${g.free_gb}/${g.total_gb} GB free)`).join(', ');
-        devEl.innerHTML = `<span style="color:#86efac;font-weight:700;">🟢 GPU detected: ${gpuNames} — will auto-select GPU for inference</span>`;
+        devEl.innerHTML = `<span class="text-green-info fw-700">🟢 GPU detected: ${gpuNames} — will auto-select GPU for inference</span>`;
     } else if (devInfo.mps) {
-        devEl.innerHTML = `<span style="color:#86efac;font-weight:700;">🟢 Apple MPS detected — will auto-select MPS for inference</span>`;
+        devEl.innerHTML = `<span class="text-green-info fw-700">🟢 Apple MPS detected — will auto-select MPS for inference</span>`;
     } else {
-        devEl.innerHTML = `<span style="color:#f59e0b;">⚡ No GPU detected — will use CPU for inference</span>`;
+        devEl.innerHTML = `<span class="text-orange">⚡ No GPU detected — will use CPU for inference</span>`;
     }
     
     // Helper to check dataset info
@@ -378,7 +378,7 @@ function buildClassDropdowns() {
         chk.innerHTML = "";
         CLASS_NAMES.forEach((c, i) => {
             if (i < 9) {
-                chk.innerHTML += `<div style="display: flex; align-items: center; gap: 6px;"><span style="background: #1e2535; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${i + 1}</span> <span style="color:${COLORS[i % COLORS.length]}; font-weight: 600;">${c}</span></div>`;
+                chk.innerHTML += `<div class="d-flex align-center gap-5"><span class="bg-warning-box text-gray-light fw-700 p-2-6 border-radius-4 fs-10" style="font-family: 'JetBrains Mono', monospace;">${i + 1}</span> <span style="color:${COLORS[i % COLORS.length]}; font-weight: 600;">${c}</span></div>`;
             }
         });
     }
@@ -1054,7 +1054,7 @@ async function updateClassChart() {
     if (!body) return;
     const counts = await fetch('/api/class_stats').then(r => r.json()).catch(() => ({}));
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    if (total === 0) { body.innerHTML = '<div style="font-size:11px;color:#374151;text-align:center;padding:6px;">No annotations yet</div>'; return; }
+    if (total === 0) { body.innerHTML = '<div class="fs-11 text-slate-darker text-center p-8">No annotations yet</div>'; return; }
     body.innerHTML = '';
     const sorted = Object.entries(counts).sort(([, a], [, b]) => b - a);
     sorted.forEach(([name, cnt], i) => {
@@ -1155,7 +1155,7 @@ function updateBoxPanel() {
     const panel = document.getElementById("boxes-panel");
     panel.innerHTML = "";
     if (boxes.length === 0) {
-        panel.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:#374151;">No boxes. Draw one or wait for auto-annotation.</div>';
+        panel.innerHTML = '<div class="p-12 text-center fs-11 text-slate-darker">No boxes. Draw one or wait for auto-annotation.</div>';
         return;
     }
     boxes.forEach((b, i) => {
@@ -1605,7 +1605,7 @@ function openImageModal(imgData) {
             clsCont.appendChild(bge);
         });
     } else {
-        clsCont.innerHTML = "<div style='font-size:12px;color:#475569;'>No objects annotated.</div>";
+        clsCont.innerHTML = "<div class='fs-12 text-slate-dark'>No objects annotated.</div>";
     }
 
     // Prev/Next buttons logic
@@ -1851,8 +1851,8 @@ async function openHealthDashboard() {
             
             div.innerHTML = `
                 <div>
-                    <div style="font-weight:700; font-size:13px; color:#e2e8f0;"><i class="${icon}" style="color:${color}; margin-right:6px;"></i> ${title}</div>
-                    <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${desc}</div>
+                    <div class="fw-700 fs-13 text-gray-light"><i class="${icon} mr-8" style="color:${color};"></i> ${title}</div>
+                    <div class="fs-11 text-slate-light mt-4">${desc}</div>
                 </div>
                 <div style="font-weight:800; font-size:16px; color:${count > 0 ? color : '#64748b'};">${count}</div>
             `;
@@ -1879,7 +1879,7 @@ async function openHealthDashboard() {
         
     } catch (err) {
         console.error("Health check error", err);
-        loading.innerHTML = `<span style="color:#ef4444;">❌ Error loading health data: ${err.message}</span>`;
+        loading.innerHTML = `<span class="text-red-warning">❌ Error loading health data: ${err.message}</span>`;
     }
 }
 

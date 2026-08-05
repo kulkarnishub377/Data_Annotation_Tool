@@ -20,8 +20,8 @@
 
   <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
   <div id="setup-screen" class="screen setup-modern">
-    <div class="setup-header" style="position: relative; max-width: 900px; width: 100%;">
-      <button class="btn btn-secondary btn-glow" id="btn-help-setup" style="position: absolute; right: 0; top: 0; border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-question"></i></button>
+    <div class="setup-header pos-rel-max-900">
+      <button class="btn btn-secondary btn-glow btn-circle-help" id="btn-help-setup"><i class="fa-solid fa-question"></i></button>
       <div class="logo-icon-lg"><i class="fa-solid fa-object-group"></i></div>
       <h1>Data Annotation Tool</h1>
       <p>Professional Computer Vision Workflows</p>
@@ -35,9 +35,9 @@
         <p class="card-desc">Load your YOLO model to automatically extract classes and configure inference.</p>
         
         <div class="field-label">Pre-trained Base Model</div>
-        <select id="model-preset" class="field-select glass-input" style="margin-bottom: 10px;"></select>
+        <select id="model-preset" class="field-select glass-input mb-10"></select>
         
-        <div class="divider-text" style="margin: 10px 0;"><span>OR</span></div>
+        <div class="divider-text my-10"><span>OR</span></div>
         
         <div class="field-label">Local Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
         <select id="model-select" class="field-select glass-input"></select>
@@ -51,9 +51,9 @@
         </select>
         <div id="device-autodetect" class="device-status">⏳ Detecting devices…</div>
         
-        <button class="btn btn-purple btn-glow btn-full" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load Model</button>
+        <button class="btn btn-primary btn-glow btn-full" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load Model</button>
         
-        <div id="classes-preview" style="display:none; margin-top: 15px;">
+        <div id="classes-preview" class="d-none mt-15">
           <div class="field-label">Detected Classes</div>
           <div id="classes-tags" class="class-tags-container"></div>
         </div>
@@ -66,30 +66,30 @@
         
         <div class="dataset-section">
           <div class="field-label">Dataset Folder</div>
-          <select id="existing-dataset-select" class="field-select glass-input" style="margin-bottom:12px;">
+          <select id="existing-dataset-select" class="field-select glass-input mb-12">
             <option value="">— choose an existing dataset from root —</option>
           </select>
-          <div style="display:flex; gap:8px; margin-bottom: 16px;">
-            <input type="text" id="existing-dataset-input" class="glass-input" style="flex:1;" placeholder="Or browse custom folder..." readonly />
+          <div class="d-flex gap-8 mb-16">
+            <input type="text" id="existing-dataset-input" class="glass-input flex-1" placeholder="Or browse custom folder..." readonly />
             <button class="btn btn-secondary" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
           </div>
-          <div id="existing-info" style="font-size: 11px; color: #86efac; margin-top: -6px; margin-bottom: 12px; display: none;"></div>
-          <button class="btn btn-green btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
+          <div id="existing-info" class="text-green-info d-none"></div>
+          <button class="btn btn-primary btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
         </div>
         
         <div class="divider-text"><span>OR</span></div>
         
         <div class="dataset-section">
           <div class="field-label">Create New Dataset (Select Source)</div>
-          <div style="display:flex; gap:8px; margin-bottom:12px;">
-            <input type="text" id="src-input" class="glass-input" style="flex:1;" placeholder="Source folder path..." readonly />
+          <div class="d-flex gap-8 mb-12">
+            <input type="text" id="src-input" class="glass-input flex-1" placeholder="Source folder path..." readonly />
             <button class="btn btn-secondary" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
           </div>
-          <div id="src-info" style="font-size: 11px; color: #86efac; margin-top: -6px; margin-bottom: 12px; display: none;"></div>
-          <div id="img-badge" style="margin-bottom:14px;display:none;"></div>
+          <div id="src-info" class="text-green-info d-none"></div>
+          <div id="img-badge" class="mb-14 d-none"></div>
           
           <div class="field-label">Dataset Type</div>
-          <select id="dataset-type-select" class="field-select glass-input" style="margin-bottom:14px;">
+          <select id="dataset-type-select" class="field-select glass-input mb-14">
             <option value="bbox">Bounding Box (YOLO Object Detection)</option>
             <option value="polygon">Polygon (YOLO Instance Segmentation)</option>
           </select>
@@ -112,9 +112,9 @@
       </div>
     </div>
     
-    <div id="existing-banner" class="glass-banner" style="display:none;">
+    <div id="existing-banner" class="glass-banner d-none">
       <span id="existing-text">Dataset found</span>
-      <button class="btn btn-green" id="btn-open">Open Annotator →</button>
+      <button class="btn btn-primary" id="btn-open">Open Annotator →</button>
     </div>
   </div>
 
@@ -124,10 +124,10 @@
     <!-- TOPBAR -->
     <div id="topbar">
       <div class="logo">
-        <div class="logo-icon"><i class="fa-solid fa-object-group" style="color: white; font-size: 12px;"></i></div>
+        <div class="logo-icon"><i class="fa-solid fa-object-group text-white fs-12"></i></div>
         <span class="logo-text">Data Annotation Tool</span>
       </div>
-      <div class="split-tabs" style="margin-right:15px; border-right:1px solid #1e2535; padding-right:15px;">
+      <div class="split-tabs mr-15 border-r-dark pr-15">
         <button class="stab active" id="mode-annotate" onclick="setAppMode('annotate')"><i
             class="fa-solid fa-pen-nib"></i> Annotate</button>
         <button class="stab" id="mode-grid" onclick="setAppMode('grid')"><i class="fa-solid fa-images"></i> View
@@ -145,7 +145,7 @@
           <circle cx="11" cy="11" r="9" fill="none" stroke="#1e2535" stroke-width="2.5" />
           <circle id="prog-ring-circle" cx="11" cy="11" r="9" fill="none" stroke="#3b82f6" stroke-width="2.5"
             stroke-linecap="round" stroke-dasharray="56.5" stroke-dashoffset="56.5" transform="rotate(-90 11 11)"
-            style="transition:stroke-dashoffset .4s;" />
+            class="svg-transition" />
         </svg>
         <span id="prog-pct">0%</span>
       </div>
@@ -162,37 +162,35 @@
         <div class="toggle-slider"></div>
         <span>Auto-Save</span>
       </label>
-      <button class="btn btn-secondary" id="btn-goto-setup" style="font-size:11px;padding:4px 10px;"><i
+      <button class="btn btn-secondary fs-11 p-4-10" id="btn-goto-setup"><i
           class="fa-solid fa-gear"></i> Setup</button>
-      <button class="btn btn-secondary" id="btn-fullscreen" style="font-size:11px;padding:4px 10px;" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i> Fullscreen</button>
+      <button class="btn btn-secondary fs-11 p-4-10" id="btn-fullscreen" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i> Fullscreen</button>
     </div>
 
     <!-- GRID VIEW -->
     <div id="grid-view">
       <div class="grid-header">
         <div class="grid-controls">
-          <select id="grid-filter" class="field-select" style="width:140px; padding:6px 10px;">
+          <select id="grid-filter" class="field-select w-140 p-6-10">
             <option value="all">All Images</option>
             <option value="done">Annotated Only</option>
             <option value="pending">Pending Only</option>
           </select>
-          <select id="grid-class-filter" class="field-select" style="width:140px; padding:6px 10px;">
+          <select id="grid-class-filter" class="field-select w-140 p-6-10">
             <option value="">Any Class</option>
           </select>
-          <button class="btn btn-secondary" onclick="loadGridPage(1)" style="padding:6px 12px;">Refresh</button>
-          <button class="btn btn-secondary" onclick="openHealthDashboard()" style="padding:6px 12px;"><i class="fa-solid fa-heart-pulse"></i> Dataset Health</button>
-          <select id="export-format" class="field-select" style="width:140px; padding:6px 10px;">
+          <button class="btn btn-secondary p-6-12" onclick="loadGridPage(1)">Refresh</button>
+          <button class="btn btn-secondary p-6-12" onclick="openHealthDashboard()"><i class="fa-solid fa-heart-pulse"></i> Dataset Health</button>
+          <select id="export-format" class="field-select w-140 p-6-10">
             <option value="yolo">YOLO Format</option>
             <option value="coco">COCO Format</option>
           </select>
-          <button class="btn btn-primary" id="btn-export-dataset" style="padding:6px 12px;"><i class="fa-solid fa-file-export"></i> Export Dataset</button>
+          <button class="btn btn-primary p-6-12" id="btn-export-dataset"><i class="fa-solid fa-file-export"></i> Export Dataset</button>
         </div>
         <div class="grid-pagination">
-          <button class="btn btn-secondary" id="grid-prev" onclick="loadGridPage(gridPage-1)"
-            style="padding:6px 12px;">← Prev</button>
-          <span id="grid-page-info" style="color: #94a3b8; font-size: 13px; font-weight: 600; margin: 0 10px;">Page 1 / 1</span>
-          <button class="btn btn-secondary" id="grid-next" onclick="loadGridPage(gridPage+1)"
-            style="padding:6px 12px;">Next →</button>
+          <button class="btn btn-secondary p-6-12" id="grid-prev" onclick="loadGridPage(gridPage-1)">← Prev</button>
+          <span id="grid-page-info" class="text-slate-light fs-13 fw-600 mx-10">Page 1 / 1</span>
+          <button class="btn btn-secondary p-6-12" id="grid-next" onclick="loadGridPage(gridPage+1)">Next →</button>
         </div>
       </div>
       <div class="grid-scroll-area">
@@ -202,10 +200,10 @@
       </div>
       
       <!-- GRID FOOTER -->
-      <div class="grid-footer" style="padding: 10px 20px; background: #12151f; border-top: 1px solid #1e2535; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+      <div class="grid-footer p-10-20 bg-darker-panel border-t-dark d-flex justify-between align-center flex-shrink-0">
         <div class="grid-controls">
-          <span style="color:#94a3b8; font-size:12px; margin-right:8px; font-weight:600;">Images per page:</span>
-          <select id="grid-limit" class="field-select" style="width:80px; padding:6px 10px;" onchange="loadGridPage(1)">
+          <span class="text-slate-light fs-12 mr-8 fw-600">Images per page:</span>
+          <select id="grid-limit" class="field-select w-80 p-6-10" onchange="loadGridPage(1)">
             <option value="20">20</option>
             <option value="50" selected>50</option>
             <option value="100">100</option>
@@ -214,24 +212,22 @@
           </select>
         </div>
         <div class="grid-pagination">
-          <button class="btn btn-secondary" id="grid-prev-btm" onclick="loadGridPage(gridPage-1)"
-            style="padding:6px 12px;">← Prev</button>
-          <span id="grid-page-info-btm" style="color: #94a3b8; font-size: 13px; font-weight: 600; margin: 0 10px;">Page 1 / 1</span>
-          <button class="btn btn-secondary" id="grid-next-btm" onclick="loadGridPage(gridPage+1)"
-            style="padding:6px 12px;">Next →</button>
+          <button class="btn btn-secondary p-6-12" id="grid-prev-btm" onclick="loadGridPage(gridPage-1)">← Prev</button>
+          <span id="grid-page-info-btm" class="text-slate-light fs-13 fw-600 mx-10">Page 1 / 1</span>
+          <button class="btn btn-secondary p-6-12" id="grid-next-btm" onclick="loadGridPage(gridPage+1)">Next →</button>
         </div>
       </div>
     </div>
 
     <!-- ANNOTATOR LEFT SIDEBAR -->
     <div id="left">
-      <div class="sh" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>Images <span id="img-count" style="color:#3b82f6;font-weight:700;"></span></span>
-        <button class="btn btn-secondary" id="btn-add-images" style="padding: 2px 6px; font-size: 10px;"><i
+      <div class="sh d-flex justify-between align-center">
+        <span>Images <span id="img-count" class="text-blue-highlight fw-700"></span></span>
+        <button class="btn btn-secondary p-2-6 fs-10" id="btn-add-images"><i
             class="fa-solid fa-plus"></i> Add</button>
       </div>
       <input id="search" type="text" placeholder="Search…" />
-      <div id="health-warnings" style="margin-bottom:8px;margin-top:8px;font-size:11px;color:#f87171;font-weight:600;display:none;background:#1e2535;padding:6px;border-radius:4px;border:1px solid #3b2025;text-align:center;"></div>
+      <div id="health-warnings" class="my-8 fs-11 text-red-warning fw-600 d-none bg-warning-box p-6 border-radius-4 border-red-dark text-center"></div>
       <!-- Filter tabs -->
       <div class="filter-tabs">
         <button class="ftab active" data-filter="all">All</button>
@@ -279,7 +275,7 @@
           <div id="loading-text">Select an image to begin</div>
         </div>
         <canvas id="annot-canvas"></canvas>
-        <canvas id="minimap" style="position:absolute; bottom:10px; right:40px; width:120px; border:1px solid #3b82f6; border-radius:4px; display:none; background:#000; pointer-events:none; z-index:20; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></canvas>
+        <canvas id="minimap" class="pos-abs w-120 border-blue border-radius-4 d-none bg-black"></canvas>
         <!-- Inline class popup -->
         <div id="class-popup">
           <div class="popup-title">NEW BOX — SELECT CLASS</div>
@@ -319,24 +315,21 @@
 
       <!-- BOXES PANEL -->
       <div class="rpanel active" id="panel-boxes">
-        <div id="boxes-panel" style="flex:1;overflow-y:auto; border-bottom: 1px solid #1e2535;"></div>
-        <div id="history-panel" style="height: 120px; overflow-y: auto; background: #0b0f19; border-bottom: 1px solid #1e2535; padding: 8px;">
-          <div style="font-size: 10px; color: #64748b; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">
+        <div id="boxes-panel" class="flex-1 overflow-y-auto border-b-dark"></div>
+        <div id="history-panel" class="h-120 overflow-y-auto bg-dark-panel border-b-dark p-8">
+          <div class="fs-10 text-slate fw-700 mb-6 text-uppercase">
             Action History (Image)
           </div>
-          <div id="history-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+          <div id="history-list" class="d-flex flex-col gap-4"></div>
         </div>
-        <button id="add-box-btn" style="margin-top: 8px;"><i class="fa-solid fa-plus"></i> Add Box</button>
+        <button id="add-box-btn" class="mt-8"><i class="fa-solid fa-plus"></i> Add Box</button>
         <div class="rfoot">
           <button class="btn btn-primary btn-full" id="btn-save"><i class="fa-solid fa-floppy-disk"></i> Save
             Annotations</button>
-          <div
-            style="margin-top: 10px; padding: 8px; background: #12151f; border: 1px solid #1e2535; border-radius: 6px;">
-            <div
-              style="font-size: 10px; color: #64748b; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">
+          <div class="mt-10 p-8 bg-darker-panel border-dark border-radius-6">
+            <div class="fs-10 text-slate fw-700 mb-6 text-uppercase">
               Class Shortcuts</div>
-            <div id="dynamic-class-hotkeys"
-              style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px;"></div>
+            <div id="dynamic-class-hotkeys" class="grid-2 gap-5 fs-11"></div>
           </div>
         </div>
       </div>
@@ -353,10 +346,10 @@
             <div class="split-bar-v" id="sbar-v" style="width:20%"></div>
             <div class="split-bar-x" id="sbar-x" style="width:10%"></div>
           </div>
-          <div style="display:flex;gap:8px;font-size:10px;color:#475569;">
-            <span><i class="fa-solid fa-circle" style="color:#3b82f6;"></i> Train <b id="sst-tr">–</b></span>
-            <span><i class="fa-solid fa-circle" style="color:#22c55e;"></i> Valid <b id="sst-vl">–</b></span>
-            <span><i class="fa-solid fa-circle" style="color:#f59e0b;"></i> Test <b id="sst-ts">–</b></span>
+          <div class="d-flex gap-8 fs-10 text-slate-dark">
+            <span><i class="fa-solid fa-circle text-blue"></i> Train <b id="sst-tr">–</b></span>
+            <span><i class="fa-solid fa-circle text-green"></i> Valid <b id="sst-vl">–</b></span>
+            <span><i class="fa-solid fa-circle text-orange"></i> Test <b id="sst-ts">–</b></span>
           </div>
         </div>
 
@@ -364,12 +357,12 @@
         <div class="cls-chart">
           <div class="cls-chart-title"><i class="fa-solid fa-chart-pie"></i> Class Distribution</div>
           <div id="cls-chart-body">
-            <div style="font-size:11px;color:#374151;text-align:center;padding:8px;">Loading…</div>
+            <div class="fs-11 text-slate-darker text-center p-8">Loading…</div>
           </div>
         </div>
 
-        <div class="field-label" style="margin-bottom:6px;">Split Ratio</div>
-        <div class="ratio-row" style="margin-bottom:12px;">
+        <div class="field-label mb-6">Split Ratio</div>
+        <div class="ratio-row mb-12">
           <div class="ratio-col"><label>Train %</label><input type="number" id="sp-train" value="70" min="1" max="98" />
           </div>
           <div class="ratio-col"><label>Valid %</label><input type="number" id="sp-valid" value="20" min="1" max="98" />
@@ -377,13 +370,13 @@
           <div class="ratio-col"><label>Test %</label><input type="number" id="sp-test" value="10" min="1" max="98" />
           </div>
         </div>
-        <p style="font-size:11px;color:#475569;margin-bottom:12px;line-height:1.5;">
-          Only <strong style="color:#86efac;">annotated</strong> images are split. Unannotated images remain in their
+        <p class="fs-11 text-slate-dark mb-12 lh-15">
+          Only <strong class="text-green-info">annotated</strong> images are split. Unannotated images remain in their
           current folder.
         </p>
         <button class="btn btn-purple btn-full" id="btn-auto-split"><i class="fa-solid fa-shuffle"></i> Auto-Split
           Dataset</button>
-        <div id="split-result" style="margin-top:8px;display:none;font-size:12px;color:#86efac;text-align:center;">
+        <div id="split-result" class="mt-8 d-none fs-12 text-green-info text-center">
         </div>
       </div>
 
@@ -416,7 +409,7 @@
           </select>
         </div>
         <div class="train-field">
-          <label>Custom .pt file <span style="color:#374151;">(overrides above)</span></label>
+          <label>Custom .pt file <span class="text-slate-darker">(overrides above)</span></label>
           <select id="tr-custom"></select>
         </div>
         <div class="train-two">
@@ -442,13 +435,13 @@
           <div class="train-field"><label>Run Name</label><input type="text" id="tr-name" value="vehicle_v1" /></div>
         </div>
         <div id="train-log"></div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-primary" id="btn-train" style="flex:1;justify-content:center;"><i
+        <div class="d-flex gap-5">
+          <button class="btn btn-primary flex-1 justify-center" id="btn-train"><i
               class="fa-solid fa-play"></i> Start
             Training</button>
           <button class="btn btn-danger" id="btn-stop-train"><i class="fa-solid fa-stop"></i> Stop</button>
         </div>
-        <div id="train-status" style="font-size:11px;color:#475569;text-align:center;margin-top:5px;"></div>
+        <div id="train-status" class="fs-11 text-slate-dark text-center mt-5"></div>
       </div>
     </div>
 
@@ -466,13 +459,13 @@
       <div id="im-right">
         <div class="im-title" id="im-title">image.jpg</div>
         <div class="im-meta" id="im-meta">Size: 0x0 | Split: train</div>
-        <div class="field-label" style="margin-top:10px;">Objects in Image</div>
+        <div class="field-label mt-10">Objects in Image</div>
         <div class="im-classes" id="im-classes">
           <!-- Badges go here -->
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px;">
-          <button class="btn btn-secondary" id="btn-modal-prev" style="flex: 1;">← Prev</button>
-          <button class="btn btn-secondary" id="btn-modal-next" style="flex: 1;">Next →</button>
+        <div class="d-flex gap-10 my-10">
+          <button class="btn btn-secondary flex-1" id="btn-modal-prev">← Prev</button>
+          <button class="btn btn-secondary flex-1" id="btn-modal-next">Next →</button>
         </div>
         <button class="btn btn-primary btn-full" id="btn-jump-anno"><i class="fa-solid fa-pen"></i> Jump to
           Annotation</button>
@@ -483,26 +476,25 @@
   <div id="toast"></div>
 
   <!-- ADD IMAGES MODAL -->
-  <div id="add-images-modal" class="screen hidden" style="z-index: 1000; background: rgba(9,11,16,0.8);">
-    <div
-      style="background: #12151f; padding: 20px; border-radius: 8px; width: 400px; border: 1px solid #1e2535; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-      <div class="sh" style="margin-top:0;">Add More Images</div>
-      <p style="font-size: 12px; color:#94a3b8; margin-bottom: 12px;">Select a source folder to load images into the
+  <div id="add-images-modal" class="screen hidden modal-backdrop">
+    <div class="modal-content modal-shadow bg-darker-panel p-20 border-radius-8 w-400 border-dark">
+      <div class="sh mt-0">Add More Images</div>
+      <p class="fs-12 text-slate-light mb-12">Select a source folder to load images into the
         dataset.</p>
 
       <div class="field-label">Dataset Folder</div>
-      <div style="display:flex; gap:8px; margin-bottom: 16px;">
-        <input type="text" id="exist-src-input" class="glass-input" style="flex:1;" placeholder="Select dataset folder..." readonly />
+      <div class="d-flex gap-8 mb-16">
+        <input type="text" id="exist-src-input" class="glass-input flex-1" placeholder="Select dataset folder..." readonly />
         <button class="btn btn-secondary" id="btn-browse-exist"><i class="fa-solid fa-folder"></i></button>
       </div>
-      <div id="exist-info" style="font-size: 11px; color: #86efac; margin-top: -10px; margin-bottom: 12px; display: none;"></div>
+      <div id="exist-info" class="fs-11 text-green-info mt-neg-10 mb-12 d-none"></div>
 
       <div class="field-label">Source Folder</div>
-      <div style="display:flex; gap:8px; margin-bottom:16px;">
-        <input type="text" id="add-src-input" class="glass-input" style="flex:1;" placeholder="Folder path..." readonly />
+      <div class="d-flex gap-8 mb-16">
+        <input type="text" id="add-src-input" class="glass-input flex-1" placeholder="Folder path..." readonly />
         <button class="btn btn-secondary" id="btn-browse-add-src"><i class="fa-solid fa-folder"></i></button>
       </div>
-      <div id="new-info" style="font-size: 11px; color: #86efac; margin-top: -10px; margin-bottom: 12px; display: none;"></div>
+      <div id="new-info" class="fs-11 text-green-info mt-neg-10 mb-12 d-none"></div>
 
       <div id="add-ingest-prog" class="prog-wrap">
         <div class="prog-header"><span>Copying...</span><span id="add-ip-num">0 / 0</span></div>
@@ -512,25 +504,24 @@
         <div class="prog-status" id="add-ip-status"></div>
       </div>
 
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button class="btn btn-secondary" onclick="document.getElementById('add-images-modal').classList.add('hidden')"
-          style="flex:1; justify-content:center;">Cancel</button>
-        <button class="btn btn-primary" id="btn-confirm-add" style="flex:1; justify-content:center;"><i
+      <div class="d-flex gap-10 mt-20">
+        <button class="btn btn-secondary flex-1 justify-center" id="btn-cancel-add">Cancel</button>
+        <button class="btn btn-primary flex-1 justify-center" id="btn-confirm-add"><i
             class="fa-solid fa-download"></i> Load</button>
       </div>
     </div>
   </div>
 
   <!-- HELP MODAL -->
-  <div id="help-modal" class="screen" style="display: none; z-index: 300;">
-    <div class="card glass-card" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <span><i class="fa-solid fa-circle-question" style="color: #3b82f6;"></i> Help & Shortcuts</span>
-        <button class="im-close" id="help-close" onclick="document.getElementById('help-modal').style.display='none'" style="position: static; font-size: 24px;">&times;</button>
+  <div id="help-modal" class="screen d-none z-300">
+    <div class="card glass-card max-w-800 max-h-90vh overflow-y-auto">
+      <div class="card-title d-flex justify-between align-center mb-20">
+        <span><i class="fa-solid fa-circle-question text-blue"></i> Help & Shortcuts</span>
+        <button class="im-close fs-24 pos-static" id="help-close" onclick="document.getElementById('help-modal').classList.add('d-none')">&times;</button>
       </div>
       
-      <h3 style="color: #fff; margin-bottom: 10px; font-size: 16px;">🔄 End-to-End Workflow</h3>
-      <ol style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-left: 20px; margin-bottom: 20px;">
+      <h3 class="text-white mb-10 fs-16">🔄 End-to-End Workflow</h3>
+      <ol class="text-slate-light fs-13 lh-16 ml-20 mb-20">
         <li><b>Select Model</b>: Pick any supported model file (.pt, .onnx, etc.). The tool auto-detects your GPU and extracts model classes.</li>
         <li><b>Ingest Images</b>: Select a source folder and click "Load Images". Hardlinking prevents duplicating image data.</li>
         <li><b>Review & Annotate</b>: YOLO will pre-annotate images in the background. Use the draw mode and hotkeys to perfect your dataset.</li>
@@ -539,10 +530,10 @@
         <li><b>Export</b>: Return to the Grid View and click "Export Dataset" to download the finalized package.</li>
       </ol>
       
-      <h3 style="color: #fff; margin-bottom: 10px; font-size: 16px;">⌨️ Essential Keyboard Shortcuts</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-          <ul style="list-style: none; color: #94a3b8; font-size: 13px; line-height: 1.8;">
+      <h3 class="text-white mb-10 fs-16">⌨️ Essential Keyboard Shortcuts</h3>
+      <div class="grid-2 gap-10">
+        <div class="bg-black-trans-20 p-10 border-radius-8">
+          <ul class="list-none text-slate-light fs-13 lh-18">
             <li><span class="hk">D</span> Toggle Draw mode</li>
             <li><span class="hk">F</span> Fit image to screen</li>
             <li><span class="hk">C</span> Copy boxes from previous</li>
@@ -551,8 +542,8 @@
             <li><span class="hk">1</span> - <span class="hk">9</span> Set class 1-9</li>
           </ul>
         </div>
-        <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-          <ul style="list-style: none; color: #94a3b8; font-size: 13px; line-height: 1.8;">
+        <div class="bg-black-trans-20 p-10 border-radius-8">
+          <ul class="list-none text-slate-light fs-13 lh-18">
             <li><span class="hk">←</span> / <span class="hk">→</span> Prev / Next image</li>
             <li><span class="hk">Enter</span> Save & jump to next</li>
             <li><span class="hk">Del</span> Delete selected box</li>
@@ -567,26 +558,26 @@
 
   <!-- HEALTH DASHBOARD MODAL -->
   <div class="modal-overlay" id="health-modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-heart-pulse"></i> Dataset Health Dashboard</h2>
-      <div id="health-loading" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> Scanning entire dataset...</div>
+    <div class="modal-content max-w-600">
+      <h2 class="fs-18 mb-12"><i class="fa-solid fa-heart-pulse"></i> Dataset Health Dashboard</h2>
+      <div id="health-loading" class="text-center p-30 text-slate-light"><i class="fa-solid fa-spinner fa-spin"></i> Scanning entire dataset...</div>
       
-      <div id="health-results" style="display:none;">
-        <div style="display:flex; justify-content:space-between; background:#12151f; padding:12px; border-radius:6px; margin-bottom:12px;">
+      <div id="health-results" class="d-none">
+        <div class="d-flex justify-between bg-darker-panel p-12 border-radius-6 mb-12">
           <div>
-            <div style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Health Score</div>
-            <div id="health-score" style="font-size:32px; font-weight:800; color:#22c55e;">100</div>
+            <div class="fs-12 text-slate fw-600 text-uppercase">Health Score</div>
+            <div id="health-score" class="fs-32 fw-800 text-green">100</div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Dataset Stats</div>
-            <div style="font-size:14px; font-weight:600; color:#e2e8f0; margin-top:4px;"><span id="health-total-imgs">0</span> Images</div>
-            <div style="font-size:14px; font-weight:600; color:#e2e8f0;"><span id="health-total-boxes">0</span> Annotations</div>
+          <div class="text-right">
+            <div class="fs-12 text-slate fw-600 text-uppercase">Dataset Stats</div>
+            <div class="fs-14 fw-600 text-gray-light mt-4"><span id="health-total-imgs">0</span> Images</div>
+            <div class="fs-14 fw-600 text-gray-light"><span id="health-total-boxes">0</span> Annotations</div>
           </div>
         </div>
 
-        <h3 style="font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Anomaly Scan Results</h3>
+        <h3 class="fs-13 text-slate-light fw-600 text-uppercase mb-8">Anomaly Scan Results</h3>
         
-        <div id="health-issues-list" style="display:flex; flex-direction:column; gap:8px;">
+        <div id="health-issues-list" class="d-flex flex-col gap-8">
           <!-- Dynamically populated rows -->
         </div>
 
