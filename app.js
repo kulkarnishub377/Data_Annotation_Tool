@@ -544,8 +544,7 @@ function _doRender() {
     // Apply brightness/contrast/extra filters via global composite
     let filterStr = `brightness(${bcBright}) contrast(${bcContrast})`;
     if (extraFilterType !== "none") {
-        if (extraFilterType === "blur") filterStr += ` blur(${extraFilterVal}px)`;
-        else filterStr += ` ${extraFilterType}(${extraFilterVal}%)`;
+        filterStr += ` ${extraFilterType}(${extraFilterVal}%)`;
     }
     ctx.filter = filterStr;
     ctx.drawImage(imgEl, ox, oy, dW, dH);
@@ -1239,8 +1238,7 @@ const fType = document.getElementById("extra-filter-type");
 const fVal = document.getElementById("extra-filter-val");
 fType.addEventListener("change", e => {
     const v = e.target.value;
-    if (v === "blur") { fVal.max = 20; fVal.value = 0; }
-    else if (v === "saturate") { fVal.max = 300; fVal.value = 100; }
+    if (v === "saturate") { fVal.max = 300; fVal.value = 100; }
     else { fVal.max = 100; fVal.value = 0; }
     extraFilterType = v;
     extraFilterVal = parseFloat(fVal.value);
