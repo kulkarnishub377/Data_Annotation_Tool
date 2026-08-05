@@ -1188,6 +1188,8 @@ def api_labels(split, filename):
 @app.route("/api/save", methods=["POST"])
 def api_save():
     data  = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON format"}), 400
     split = data.get("split", "train")
     fname = data.get("filename", "")
     boxes = data.get("boxes", [])
@@ -1207,6 +1209,8 @@ def api_save():
 @app.route("/api/delete_image", methods=["POST"])
 def api_delete_image():
     data  = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON format"}), 400
     split = data.get("split", "train")
     fname = data.get("filename", "")
     for p in [image_path(split, fname), label_path(split, fname)]:
@@ -1221,6 +1225,8 @@ def api_delete_image():
 def api_train():
     global _train_process, _train_log_buffer
     data       = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON format"}), 400
     model_file = data.get("model",   "yolov8n.pt")
     epochs     = int(data.get("epochs",    50))
     batch      = int(data.get("batch",     16))
