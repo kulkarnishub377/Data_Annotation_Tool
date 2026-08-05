@@ -59,8 +59,8 @@ def validate_split(split):
 
 def secure_path(base_dir, *paths):
     """Safely join paths and ensure the result is within base_dir."""
-    base_abs = os.path.abspath(base_dir)
-    final_path = os.path.abspath(os.path.join(base_abs, *paths))
+    base_abs = os.path.realpath(os.path.abspath(base_dir))
+    final_path = os.path.realpath(os.path.abspath(os.path.join(base_abs, *paths)))
     if os.path.commonpath([base_abs, final_path]) != base_abs:
         raise ValueError("Path traversal attempt detected")
     return final_path
@@ -155,9 +155,11 @@ def set_active_dataset(src_dir, is_existing=False):
 
 # ─── DATABASE ────────────────────────────────────────────────────────────────
 def get_db():
-    """Thread-local SQLite connection."""
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    """Thread-local SQLite connection with WAL enabled."""
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
     return conn
 
 
@@ -338,23 +340,35 @@ def get_img_lock(key):
 def get_image_dirs():
     skip = {'templates', '.vscode', 'annotated_dataset', 'vedio', '__pycache__', 'Data_annotrator_tool', 'runs'}
     result = []
-    for name in sorted(os.listdir(BASE_DIR)):
-        if name in skip or name.startswith('.'):
-            continue
-        full = os.path.join(BASE_DIR, name)
-        if os.path.isdir(full):
-            count = sum(1 for f in os.listdir(full) if Path(f).suffix.lower() in IMG_EXTS)
-            if count > 0:
-                result.append({"name": name, "path": full, "count": count})
+    try:
+        with os.scandir(BASE_DIR) as it:
+            for entry in it:
+                if entry.name in skip or entry.name.startswith('.'):
+                    continue
+                if entry.is_dir():
+                    count = 0
+                    try:
+                        with os.scandir(entry.path) as sub_it:
+                            count = sum(1 for sub in sub_it if sub.is_file() and Path(sub.name).suffix.lower() in IMG_EXTS)
+                    except Exception:
+                        pass
+                    if count > 0:
+                        result.append({"name": entry.name, "path": entry.path, "count": count})
+    except Exception:
+        pass
+    result.sort(key=lambda x: x['name'])
     return result
 
 
 def list_images(src_dir):
-    return sorted(
-        os.path.join(src_dir, f)
-        for f in os.listdir(src_dir)
-        if Path(f).suffix.lower() in IMG_EXTS
-    )
+    try:
+        with os.scandir(src_dir) as it:
+            return sorted(
+                entry.path for entry in it
+                if entry.is_file() and Path(entry.name).suffix.lower() in IMG_EXTS
+            )
+    except Exception:
+        return []
 
 
 def label_path(split, name):
@@ -546,8 +560,16 @@ def api_device_info():
 def api_set_model():
     global _model_path, _device, _class_names, _model
     data = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON format"}), 400
+    
     new_path = data.get("model_path", "")
+    if not isinstance(new_path, str):
+        return jsonify({"error": "model_path must be a string"}), 400
+        
     explicit_device = data.get("device", "auto")
+    if not isinstance(explicit_device, str):
+        return jsonify({"error": "device must be a string"}), 400
 
     if new_path and not os.path.exists(new_path):
         candidate_models = os.path.join(MODELS_DIR, new_path)
@@ -690,8 +712,17 @@ def api_state():
 @app.route("/api/ingest", methods=["POST"])
 def api_ingest():
     data = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON format"}), 400
+        
     src  = data.get("source_dir", "")
+    if not isinstance(src, str):
+        return jsonify({"error": "source_dir must be a string"}), 400
+        
     dataset_type = data.get("dataset_type", "bbox")
+    if dataset_type not in ["bbox", "polygon"]:
+        return jsonify({"error": "dataset_type must be bbox or polygon"}), 400
+        
     if not src or not os.path.isdir(src):
         return jsonify({"error": "invalid source dir"}), 400
 
@@ -737,8 +768,17 @@ def api_ingest():
 @app.route("/api/ingest_append", methods=["POST"])
 def api_ingest_append():
     data = request.get_json()
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid JSON format"}), 400
+        
     src  = data.get("source_dir", "")
+    if not isinstance(src, str):
+        return jsonify({"error": "source_dir must be a string"}), 400
+        
     target_split = data.get("split", "train")
+    if not isinstance(target_split, str):
+        return jsonify({"error": "split must be a string"}), 400
+        
     try:
         validate_split(target_split)
     except ValueError:
