@@ -57,10 +57,15 @@ def validate_split(split):
     if split not in VALID_SPLITS:
         raise ValueError("Invalid split")
 
+_secure_path_cache = {}
+
 def secure_path(base_dir, *paths):
     """Safely join paths and ensure the result is within base_dir."""
-    base_abs = os.path.realpath(os.path.abspath(base_dir))
-    final_path = os.path.realpath(os.path.abspath(os.path.join(base_abs, *paths)))
+    if base_dir not in _secure_path_cache:
+        _secure_path_cache[base_dir] = os.path.abspath(base_dir)
+    base_abs = _secure_path_cache[base_dir]
+    
+    final_path = os.path.abspath(os.path.join(base_abs, *paths))
     if os.path.commonpath([base_abs, final_path]) != base_abs:
         raise ValueError("Path traversal attempt detected")
     return final_path
