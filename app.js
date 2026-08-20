@@ -294,6 +294,32 @@ async function initSetup() {
             const res = await fetch("/api/browse_folder").then(r => r.json());
             if (res.path) {
                 inputAddSrc.value = res.path;
+                
+                // Fetch info
+                const infoBox = document.getElementById("new-info");
+                if (infoBox) {
+                    infoBox.style.display = "block";
+                    infoBox.textContent = "Scanning folder...";
+                    infoBox.style.color = "#94a3b8";
+                    
+                    try {
+                        const info = await fetch(`/api/source_info?path=${encodeURIComponent(res.path)}`).then(r => r.json());
+                        if (info.valid) {
+                            if (info.count > 0) {
+                                infoBox.style.color = "#86efac";
+                                infoBox.innerHTML = `✅ Found <b>${info.count}</b> images ready to load.`;
+                            } else {
+                                infoBox.style.color = "#f59e0b";
+                                infoBox.innerHTML = `⚠️ No supported images (.jpg, .png, etc.) found in this folder.`;
+                            }
+                        } else {
+                            infoBox.style.color = "#f87171";
+                            infoBox.innerHTML = `❌ Failed to read folder contents.`;
+                        }
+                    } catch(e) {
+                        infoBox.style.display = "none";
+                    }
+                }
             }
         });
     }
@@ -1692,6 +1718,8 @@ function closeImageModal() {
 document.getElementById("btn-add-images").addEventListener("click", async () => {
     document.getElementById("add-src-input").value = "";
     document.getElementById("add-ingest-prog").style.display = "none";
+    const infoBox = document.getElementById("new-info");
+    if (infoBox) infoBox.style.display = "none";
     document.getElementById("btn-confirm-add").disabled = false;
     document.getElementById("add-images-modal").classList.remove("hidden");
 });

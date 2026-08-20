@@ -490,18 +490,9 @@
   <!-- ADD IMAGES MODAL -->
   <div id="add-images-modal" class="screen hidden modal-backdrop">
     <div class="modal-content modal-shadow bg-darker-panel p-20 border-radius-8 w-400 border-dark">
-      <div class="sh mt-0">Add More Images</div>
-      <p class="fs-12 text-slate-light mb-12">Select a source folder to load images into the
-        dataset.</p>
+      <h3 class="text-white mb-15 fs-18"><i class="fa-solid fa-images text-blue"></i> Add More Images</h3>
 
-      <div class="field-label">Dataset Folder</div>
-      <div class="d-flex gap-8 mb-16">
-        <input type="text" id="exist-src-input" class="glass-input flex-1" placeholder="Select dataset folder..." readonly />
-        <button class="btn btn-secondary" id="btn-browse-exist"><i class="fa-solid fa-folder"></i></button>
-      </div>
-      <div id="exist-info" class="fs-11 text-green-info mt-neg-10 mb-12 d-none"></div>
-
-      <div class="field-label">Source Folder</div>
+      <div class="field-label">Select Folder <span class="hint">(containing images to add)</span></div>
       <div class="d-flex gap-8 mb-16">
         <input type="text" id="add-src-input" class="glass-input flex-1" placeholder="Folder path..." readonly />
         <button class="btn btn-secondary" id="btn-browse-add-src"><i class="fa-solid fa-folder"></i></button>
