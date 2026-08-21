@@ -40,14 +40,22 @@ if os.path.exists(config_path):
 
 # ─── APP ─────────────────────────────────────────────────────────────────────
 __version__ = "1.0.0"
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+if getattr(sys, 'frozen', False):
+    # Running inside a PyInstaller frozen bundle
+    APP_DIR = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = APP_DIR
+
 app = Flask(__name__, template_folder=APP_DIR, static_folder=os.path.join(APP_DIR, 'static'))
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 if config.has_option("Paths", "BASE_DIR"):
     BASE_DIR = config.get("Paths", "BASE_DIR")
-else:
-    BASE_DIR = os.environ.get("BASE_DIR", os.path.dirname(os.path.abspath(__file__)))
+elif "BASE_DIR" in os.environ:
+    BASE_DIR = os.environ.get("BASE_DIR")
 
 if config.has_option("Paths", "MODELS_DIR"):
     MODELS_DIR = config.get("Paths", "MODELS_DIR")
