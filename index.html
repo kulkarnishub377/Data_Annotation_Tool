@@ -598,12 +598,15 @@
   <!-- ADD IMAGES MODAL -->
   <div id="add-images-modal" class="screen hidden modal-backdrop">
     <div class="modal-content modal-shadow bg-darker-panel p-20 border-radius-8 w-400 border-dark">
-      <h3 class="text-white mb-15 fs-18"><i class="fa-solid fa-images text-blue"></i> Add More Images</h3>
+      <div class="d-flex justify-between align-center mb-15">
+        <h3 class="text-white fs-18"><i class="fa-solid fa-images text-blue mr-6"></i> Add More Images</h3>
+        <button class="im-close fs-20 pos-static" id="btn-close-add-modal" onclick="document.getElementById('add-images-modal').classList.add('hidden')">&times;</button>
+      </div>
 
       <div class="field-label">Select Folder <span class="hint">(containing images to add)</span></div>
       <div class="d-flex gap-8 mb-16">
-        <input type="text" id="add-src-input" class="glass-input flex-1" placeholder="Folder path..." readonly />
-        <button class="btn btn-secondary" id="btn-browse-add-src"><i class="fa-solid fa-folder"></i></button>
+        <input type="text" id="add-src-input" class="glass-input flex-1" placeholder="Enter or paste folder path..." />
+        <button class="btn btn-secondary" id="btn-browse-add-src" title="Browse or enter folder"><i class="fa-solid fa-folder"></i></button>
       </div>
       <div id="new-info" class="fs-11 text-green-info mt-neg-10 mb-12 d-none"></div>
 

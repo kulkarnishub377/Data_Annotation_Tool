@@ -1715,13 +1715,31 @@ function closeImageModal() {
 }
 
 // ─── ADD IMAGES MODAL LOGIC ──────────────────────────────────────────────────
-document.getElementById("btn-add-images").addEventListener("click", async () => {
+document.getElementById("btn-add-images")?.addEventListener("click", () => {
     document.getElementById("add-src-input").value = "";
     document.getElementById("add-ingest-prog").style.display = "none";
     const infoBox = document.getElementById("new-info");
     if (infoBox) infoBox.style.display = "none";
     document.getElementById("btn-confirm-add").disabled = false;
     document.getElementById("add-images-modal").classList.remove("hidden");
+});
+
+document.getElementById("btn-cancel-add")?.addEventListener("click", () => {
+    document.getElementById("add-images-modal").classList.add("hidden");
+});
+
+document.getElementById("btn-browse-add-src")?.addEventListener("click", () => {
+    const currentVal = document.getElementById("add-src-input").value;
+    const folder = prompt("Enter folder path containing images to add:", currentVal || "");
+    if (folder) {
+        document.getElementById("add-src-input").value = folder.trim();
+    }
+});
+
+document.getElementById("add-images-modal")?.addEventListener("click", (e) => {
+    if (e.target.id === "add-images-modal") {
+        document.getElementById("add-images-modal").classList.add("hidden");
+    }
 });
 
 document.getElementById("btn-confirm-add").addEventListener("click", async () => {
@@ -1949,6 +1967,24 @@ async function openHealthDashboard() {
 
 document.getElementById("btn-health-close")?.addEventListener("click", () => {
     document.getElementById("health-modal").style.display = "none";
+});
+
+document.getElementById("health-modal")?.addEventListener("click", (e) => {
+    if (e.target.id === "health-modal") {
+        document.getElementById("health-modal").style.display = "none";
+    }
+});
+
+document.getElementById("help-modal")?.addEventListener("click", (e) => {
+    if (e.target.id === "help-modal") {
+        document.getElementById("help-modal").classList.add("d-none");
+    }
+});
+
+document.getElementById("image-modal")?.addEventListener("click", (e) => {
+    if (e.target.id === "image-modal") {
+        closeImageModal();
+    }
 });
 
 // ─── TRAINING PANEL SUBTABS ──────────────────────────────────────────────────
