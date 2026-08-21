@@ -155,5 +155,15 @@ class TestApp(unittest.TestCase):
         self.assertEqual(data.get("status"), "started")
         self.assertEqual(data.get("job"), "resize")
 
+    def test_api_train_cpu_restriction(self):
+        """Test that attempting to train on CPU is rejected."""
+        res = self.app.post('/api/train', json={
+            "model": "yolov8n.pt",
+            "device": "cpu"
+        })
+        self.assertEqual(res.status_code, 400)
+        data = res.get_json()
+        self.assertIn("error", data)
+
 if __name__ == '__main__':
     unittest.main()
