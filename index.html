@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Data Annotation Tool — Professional Computer Vision Labeling</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
+  <div id="setup-screen" class="screen setup-modern">
+    <div class="setup-header pos-rel-max-900">
+      <button class="btn btn-primary btn-glow btn-circle-help" id="btn-help-setup" title="Help & Shortcuts"><i class="fa-solid fa-question"></i></button>
+      <div class="logo-icon-lg"><i class="fa-solid fa-object-group"></i></div>
+      <h1>Data Annotation Tool</h1>
+      <p>Professional Computer Vision Workflows</p>
+    </div>
+
+    <div class="setup-grid">
+      <!-- Column 1: Model Setup -->
+      <div class="glass-card">
+        <div class="card-step">1</div>
+        <h2>Model Configuration</h2>
+        <p class="card-desc">Load your YOLO model to automatically extract classes and configure inference.</p>
+        
+        <div class="field-label">Pre-trained Base Model</div>
+        <select id="model-preset" class="field-select glass-input mb-10"></select>
+        
+        <div class="divider-text my-10"><span>OR</span></div>
+        
+        <div class="field-label">Local Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
+        <select id="model-select" class="field-select glass-input"></select>
+        
+        <div class="field-label">Inference Device</div>
+        <select id="device-select" class="field-select glass-input">
+          <option value="auto">Auto-Detect (Recommended)</option>
+          <option value="cpu">CPU</option>
+          <option value="0">GPU 0 (CUDA)</option>
+          <option value="mps">Apple MPS</option>
+        </select>
+        <div id="device-autodetect" class="device-status">⏳ Detecting devices…</div>
+        
+        <button class="btn btn-primary btn-glow btn-full" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load Model</button>
+        
+        <div id="classes-preview" class="d-none mt-15">
+          <div class="field-label">Detected Classes</div>
+          <div id="classes-tags" class="class-tags-container"></div>
+        </div>
+      </div>
+
+      <!-- Column 2: Dataset Setup -->
+      <div class="glass-card">
+        <div class="card-step">2</div>
+        <h2>Dataset Management</h2>
+        
+        <div class="dataset-section">
+          <div class="field-label">Dataset Folder</div>
+          <select id="existing-dataset-select" class="field-select glass-input mb-12">
+            <option value="">— choose an existing dataset from root —</option>
+          </select>
+          <div class="d-flex gap-8 mb-16">
+            <input type="text" id="existing-dataset-input" class="glass-input flex-1" placeholder="Or browse custom folder..." readonly />
+            <button class="btn btn-primary btn-glow" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
+          </div>
+          <div id="existing-info" class="text-green-info d-none"></div>
+          <button class="btn btn-primary btn-glow btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
+        </div>
+        
+        <div class="divider-text"><span>OR</span></div>
+        
+        <div class="dataset-section">
+          <div class="field-label">Create New Dataset (Select Source)</div>
+          <div class="d-flex gap-8 mb-12">
+            <input type="text" id="src-input" class="glass-input flex-1" placeholder="Source folder path..." readonly />
+            <button class="btn btn-primary btn-glow" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
+          </div>
+          <div id="src-info" class="text-green-info d-none"></div>
+          <div id="img-badge" class="mb-14 d-none"></div>
+          
+          <div class="field-label">Dataset Type</div>
+          <select id="dataset-type-select" class="field-select glass-input mb-14">
+            <option value="bbox">Bounding Box (YOLO Object Detection)</option>
+            <option value="polygon">Polygon (YOLO Instance Segmentation)</option>
+          </select>
+          
+          <div class="field-label">Split Ratio <span class="hint">(Train / Valid / Test)</span></div>
+          <div class="ratio-row glass-ratios">
+            <div class="ratio-col"><label>T %</label><input type="number" id="r-train" value="70" min="1" max="98" /></div>
+            <div class="ratio-col"><label>V %</label><input type="number" id="r-valid" value="20" min="1" max="98" /></div>
+            <div class="ratio-col"><label>Ts %</label><input type="number" id="r-test" value="10" min="1" max="98" /></div>
+          </div>
+          
+          <button class="btn btn-primary btn-glow btn-full" id="btn-ingest" disabled><i class="fa-solid fa-download"></i> Ingest Images</button>
+          
+          <div class="prog-wrap glass-prog" id="ingest-prog">
+            <div class="prog-header"><span id="ip-label">Linking images…</span><span id="ip-num">0 / 0</span></div>
+            <div class="prog-track"><div class="prog-bar" id="ip-bar"></div></div>
+            <div class="prog-status" id="ip-status"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="existing-banner" class="glass-banner d-none">
+      <span id="existing-text">Dataset found</span>
+      <button class="btn btn-primary btn-glow" id="btn-open">Open Annotator →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ MAIN APP ═════════════════════════════ -->
+  <div id="app" class="hidden" style="display:none;">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <div class="logo">
+        <div class="logo-icon"><i class="fa-solid fa-object-group text-white fs-12"></i></div>
+        <span class="logo-text">Data Annotation Tool</span>
+      </div>
+      <div class="split-tabs mr-15 border-r-dark pr-15">
+        <button class="stab active" id="mode-annotate" onclick="setAppMode('annotate')"><i
+            class="fa-solid fa-pen-nib"></i> Annotate</button>
+        <button class="stab" id="mode-grid" onclick="setAppMode('grid')"><i class="fa-solid fa-images"></i> View
+          Dataset</button>
+      </div>
+      <div class="split-tabs">
+        <button class="stab active split-btn" data-split="train">Train</button>
+        <button class="stab split-btn" data-split="valid">Valid</button>
+        <button class="stab split-btn" data-split="test">Test</button>
+      </div>
+      <div class="spacer"></div>
+      <!-- Progress ring -->
+      <div class="prog-ring-wrap" title="Annotation progress">
+        <svg width="22" height="22" viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" fill="none" stroke="#1e2535" stroke-width="2.5" />
+          <circle id="prog-ring-circle" cx="11" cy="11" r="9" fill="none" stroke="#3b82f6" stroke-width="2.5"
+            stroke-linecap="round" stroke-dasharray="56.5" stroke-dashoffset="56.5" transform="rotate(-90 11 11)"
+            class="svg-transition" />
+        </svg>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div class="stat-chip">Train <b id="s-train">–</b></div>
+      <div class="stat-chip">Valid <b id="s-valid">–</b></div>
+      <div class="stat-chip">Test <b id="s-test">–</b></div>
+      <!-- Device chip (populated after model load) -->
+      <div class="device-chip cpu" id="device-chip" title="Inference device">CPU</div>
+      <!-- Session timer -->
+      <span class="session-timer" id="session-timer" title="Session time">00:00</span>
+      <!-- Auto-save toggle -->
+      <label class="toggle-wrap on" id="autosave-label" title="Auto-Save">
+        <input type="checkbox" id="autosave-toggle" checked>
+        <div class="toggle-slider"></div>
+        <span>Auto-Save</span>
+      </label>
+      <button class="btn btn-secondary fs-11 p-4-10" id="btn-goto-setup"><i
+          class="fa-solid fa-gear"></i> Setup</button>
+      <button class="btn btn-secondary fs-11 p-4-10" id="btn-fullscreen" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i> Fullscreen</button>
+    </div>
+
+    <!-- GRID VIEW -->
+    <div id="grid-view">
+      <div class="grid-header">
+        <div class="grid-controls">
+          <select id="grid-filter" class="field-select w-140 p-6-10">
+            <option value="all">All Images</option>
+            <option value="done">Annotated Only</option>
+            <option value="pending">Pending Only</option>
+          </select>
+          <select id="grid-class-filter" class="field-select w-140 p-6-10">
+            <option value="">Any Class</option>
+          </select>
+          <button class="btn btn-secondary p-6-12" onclick="loadGridPage(1)">Refresh</button>
+          <button class="btn btn-secondary p-6-12" onclick="openHealthDashboard()"><i class="fa-solid fa-heart-pulse"></i> Dataset Health</button>
+          <select id="export-format" class="field-select w-140 p-6-10">
+            <option value="yolo">YOLO Format</option>
+            <option value="coco">COCO Format</option>
+          </select>
+          <button class="btn btn-primary p-6-12" id="btn-export-dataset"><i class="fa-solid fa-file-export"></i> Export Dataset</button>
+        </div>
+        <div class="grid-pagination">
+          <button class="btn btn-secondary p-6-12" id="grid-prev" onclick="loadGridPage(gridPage-1)">← Prev</button>
+          <span id="grid-page-info" class="text-slate-light fs-13 fw-600 mx-10">Page 1 / 1</span>
+          <button class="btn btn-secondary p-6-12" id="grid-next" onclick="loadGridPage(gridPage+1)">Next →</button>
+        </div>
+      </div>
+      <div class="grid-scroll-area">
+        <div class="grid-content" id="grid-content">
+          <!-- Cards go here -->
+        </div>
+      </div>
+      
+      <!-- GRID FOOTER -->
+      <div class="grid-footer p-10-20 bg-darker-panel border-t-dark d-flex justify-between align-center flex-shrink-0">
+        <div class="grid-controls">
+          <span class="text-slate-light fs-12 mr-8 fw-600">Images per page:</span>
+          <select id="grid-limit" class="field-select w-80 p-6-10" onchange="loadGridPage(1)">
+            <option value="20">20</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+          </select>
+        </div>
+        <div class="grid-pagination">
+          <button class="btn btn-secondary p-6-12" id="grid-prev-btm" onclick="loadGridPage(gridPage-1)">← Prev</button>
+          <span id="grid-page-info-btm" class="text-slate-light fs-13 fw-600 mx-10">Page 1 / 1</span>
+          <button class="btn btn-secondary p-6-12" id="grid-next-btm" onclick="loadGridPage(gridPage+1)">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNOTATOR LEFT SIDEBAR -->
+    <div id="left">
+      <div class="sh d-flex justify-between align-center">
+        <span>Images <span id="img-count" class="text-blue-highlight fw-700"></span></span>
+        <button class="btn btn-secondary p-2-6 fs-10" id="btn-add-images"><i
+            class="fa-solid fa-plus"></i> Add</button>
+      </div>
+      <input id="search" type="text" placeholder="Search…" />
+      <div id="health-warnings" class="my-8 fs-11 text-red-warning fw-600 d-none bg-warning-box p-6 border-radius-4 border-red-dark text-center"></div>
+      <!-- Filter tabs -->
+      <div class="filter-tabs">
+        <button class="ftab active" data-filter="all">All</button>
+        <button class="ftab" data-filter="done"><i class="fa-solid fa-check"></i> Done</button>
+        <button class="ftab" data-filter="pending"><i class="fa-regular fa-circle"></i> Pending</button>
+      </div>
+      <div id="image-list-viewport">
+        <div id="image-list-spacer">
+          <div id="image-list-inner"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div id="canvas-area">
+      <div id="canvas-toolbar">
+        <span id="canvas-filename">Select an image</span>
+        <div class="spacer"></div>
+        <button class="tbtn" id="btn-draw" title="Draw box (D)"><i class="fa-solid fa-pen"></i> Draw</button>
+        <button class="tbtn" id="btn-next-unanno" title="Jump to next unannotated image (J)"><i
+            class="fa-solid fa-forward-step"></i> Unannotated</button>
+        <button class="tbtn" id="btn-zoom-in" title="Zoom In (+)"><i
+            class="fa-solid fa-magnifying-glass-plus"></i></button>
+        <button class="tbtn" id="btn-zoom-out" title="Zoom Out (-)"><i
+            class="fa-solid fa-magnifying-glass-minus"></i></button>
+        <button class="tbtn" id="btn-fit" title="Fit to screen (F)"><i class="fa-solid fa-expand"></i> Fit</button>
+        <!-- Brightness / Contrast -->
+        <div class="bc-wrap" title="Brightness">
+          <label><i class="fa-solid fa-sun"></i></label>
+          <input type="range" id="bc-bright" min="0.3" max="2.5" step="0.05" value="1">
+          <button id="bc-bright-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+        <div class="bc-wrap" title="Contrast">
+          <label><i class="fa-solid fa-circle-half-stroke"></i></label>
+          <input type="range" id="bc-contrast" min="0.3" max="2.5" step="0.05" value="1">
+          <button id="bc-contrast-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+        <!-- Extra Filters -->
+        <div class="bc-wrap" title="Extra Filters">
+          <select id="extra-filter-type" style="background:transparent; color:#94a3b8; border:none; outline:none; cursor:pointer; font-size:13px; font-weight:600;">
+             <option value="none" style="background:#0f172a; color:#fff">Filter</option>
+             <option value="saturate" style="background:#0f172a; color:#fff">Saturate</option>
+             <option value="grayscale" style="background:#0f172a; color:#fff">Grayscale</option>
+             <option value="invert" style="background:#0f172a; color:#fff">Invert</option>
+             <option value="sepia" style="background:#0f172a; color:#fff">Sepia</option>
+          </select>
+          <input type="range" id="extra-filter-val" min="0" max="100" step="1" value="0">
+          <button id="extra-filter-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+        <button class="tbtn red" id="btn-del-img" title="Delete image"><i class="fa-solid fa-trash"></i> Del</button>
+        <button id="btn-save-next" title="Save & go next (Enter)"><i class="fa-solid fa-check"></i> Save & Next</button>
+      </div>
+
+      <div id="canvas-wrapper">
+        <div id="loading-overlay">
+          <div class="spinner"></div>
+          <div id="loading-text">Select an image to begin</div>
+        </div>
+        <canvas id="annot-canvas"></canvas>
+        <canvas id="minimap" class="pos-abs w-120 border-blue border-radius-4 d-none bg-black"></canvas>
+        <!-- Inline class popup -->
+        <div id="class-popup">
+          <div class="popup-title">NEW BOX — SELECT CLASS</div>
+          <select id="popup-cls-sel"></select>
+          <div class="popup-btns">
+            <button id="popup-confirm"><i class="fa-solid fa-check"></i> Save</button>
+            <button id="popup-cancel"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          </div>
+        </div>
+        <button class="cnav" id="nav-prev">‹</button>
+        <button class="cnav" id="nav-next">›</button>
+      </div>
+      <!-- Hotkey hint bar -->
+      <div class="hotkeys-bar">
+        <span><span class="hk">Ctrl</span> Draw (Hold)</span>
+        <span><span class="hk">D</span> Draw (Toggle)</span>
+        <span><span class="hk">F</span> Fit</span>
+        <span><span class="hk">Ctrl+Z</span> Undo</span>
+        <span><span class="hk">1-9</span> Set class</span>
+        <span><span class="hk">Q/E</span> Cycle class</span>
+        <span><span class="hk">←/→</span> Navigate</span>
+        <span><span class="hk">J</span> Next unannotated</span>
+        <span><span class="hk">Enter</span> Save+Next</span>
+        <span><span class="hk">Del</span> Delete box</span>
+        <span><span class="hk">Wheel</span> Zoom</span>
+        <span><span class="hk">Mid-drag</span> Pan</span>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div id="right">
+      <div class="rtabs">
+        <div class="rtab active" data-panel="boxes">Boxes</div>
+        <div class="rtab" data-panel="split">Split</div>
+        <div class="rtab" data-panel="train">Training</div>
+      </div>
+
+      <!-- BOXES PANEL -->
+      <div class="rpanel active" id="panel-boxes">
+        <div id="boxes-panel" class="flex-1 overflow-y-auto border-b-dark"></div>
+        <div id="history-panel" class="h-120 overflow-y-auto bg-dark-panel border-b-dark p-8">
+          <div class="fs-10 text-slate fw-700 mb-6 text-uppercase">
+            Action History (Image)
+          </div>
+          <div id="history-list" class="d-flex flex-col gap-4"></div>
+        </div>
+        <button id="add-box-btn" class="mt-8"><i class="fa-solid fa-plus"></i> Add Box</button>
+        <div class="rfoot">
+          <button class="btn btn-primary btn-full" id="btn-save"><i class="fa-solid fa-floppy-disk"></i> Save
+            Annotations</button>
+          <div class="mt-10 p-8 bg-darker-panel border-dark border-radius-6">
+            <div class="fs-10 text-slate fw-700 mb-6 text-uppercase">
+              Class Shortcuts</div>
+            <div id="dynamic-class-hotkeys" class="grid-2 gap-5 fs-11"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPLIT PANEL -->
+      <div class="rpanel" id="panel-split">
+        <div class="split-info" id="split-stats">
+          <div class="split-info-row"><span class="split-info-label">Total images</span><span class="split-info-val"
+              id="sst-total">–</span></div>
+          <div class="split-info-row"><span class="split-info-label">Annotated</span><span class="split-info-val"
+              id="sst-anno">–</span></div>
+          <div class="split-bar-wrap">
+            <div class="split-bar-t" id="sbar-t" style="width:70%"></div>
+            <div class="split-bar-v" id="sbar-v" style="width:20%"></div>
+            <div class="split-bar-x" id="sbar-x" style="width:10%"></div>
+          </div>
+          <div class="d-flex gap-8 fs-10 text-slate-dark">
+            <span><i class="fa-solid fa-circle text-blue"></i> Train <b id="sst-tr">–</b></span>
+            <span><i class="fa-solid fa-circle text-green"></i> Valid <b id="sst-vl">–</b></span>
+            <span><i class="fa-solid fa-circle text-orange"></i> Test <b id="sst-ts">–</b></span>
+          </div>
+        </div>
+
+        <!-- Class distribution chart -->
+        <div class="cls-chart">
+          <div class="cls-chart-title"><i class="fa-solid fa-chart-pie"></i> Class Distribution</div>
+          <div id="cls-chart-body">
+            <div class="fs-11 text-slate-darker text-center p-8">Loading…</div>
+          </div>
+        </div>
+
+        <div class="field-label mb-6">Split Ratio</div>
+        <div class="ratio-row mb-12">
+          <div class="ratio-col"><label>Train %</label><input type="number" id="sp-train" value="70" min="1" max="98" />
+          </div>
+          <div class="ratio-col"><label>Valid %</label><input type="number" id="sp-valid" value="20" min="1" max="98" />
+          </div>
+          <div class="ratio-col"><label>Test %</label><input type="number" id="sp-test" value="10" min="1" max="98" />
+          </div>
+        </div>
+        <p class="fs-11 text-slate-dark mb-12 lh-15">
+          Only <strong class="text-green-info">annotated</strong> images are split. Unannotated images remain in their
+          current folder.
+        </p>
+        <button class="btn btn-purple btn-full" id="btn-auto-split"><i class="fa-solid fa-shuffle"></i> Auto-Split
+          Dataset</button>
+        <div id="split-result" class="mt-8 d-none fs-12 text-green-info text-center">
+        </div>
+      </div>
+
+      <!-- TRAINING PANEL -->
+      <div class="rpanel" id="panel-train">
+        <div class="train-field">
+          <label>Base Model</label>
+          <select id="tr-model">
+            <optgroup label="YOLO26 (Next-Gen)">
+              <option value="yolo26n.pt">YOLO26 Nano</option>
+              <option value="yolo26s.pt">YOLO26 Small</option>
+              <option value="yolo26m.pt">YOLO26 Medium</option>
+              <option value="yolo26l.pt">YOLO26 Large</option>
+              <option value="yolo26x.pt">YOLO26 XLarge</option>
+            </optgroup>
+            <optgroup label="YOLO11">
+              <option value="yolo11n.pt">YOLO11 Nano</option>
+              <option value="yolo11s.pt">YOLO11 Small</option>
+              <option value="yolo11m.pt">YOLO11 Medium</option>
+              <option value="yolo11l.pt">YOLO11 Large</option>
+              <option value="yolo11x.pt">YOLO11 XLarge</option>
+            </optgroup>
+            <optgroup label="YOLOv8">
+              <option value="yolov8n.pt">YOLOv8 Nano (fastest)</option>
+              <option value="yolov8s.pt">YOLOv8 Small</option>
+              <option value="yolov8m.pt" selected>YOLOv8 Medium</option>
+              <option value="yolov8l.pt">YOLOv8 Large</option>
+              <option value="yolov8x.pt">YOLOv8 XLarge (best)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="train-field">
+          <label>Custom .pt file <span class="text-slate-darker">(overrides above)</span></label>
+          <select id="tr-custom"></select>
+        </div>
+        <div class="train-two">
+          <div class="train-field"><label>Epochs</label><input type="number" id="tr-epochs" value="50" min="1" /></div>
+          <div class="train-field"><label>Batch Size</label><input type="number" id="tr-batch" value="16" min="1" />
+          </div>
+        </div>
+        <div class="train-two">
+          <div class="train-field"><label>Image Size</label><input type="number" id="tr-imgsz" value="640" step="32" />
+          </div>
+          <div class="train-field"><label>LR (lr0)</label><input type="number" id="tr-lr" value="0.01" step="0.001" />
+          </div>
+        </div>
+        <div class="train-two">
+          <div class="train-field"><label>Device</label>
+            <select id="tr-device">
+              <option value="cpu">CPU</option>
+              <option value="0">GPU 0 (CUDA)</option>
+              <option value="1">GPU 1 (CUDA)</option>
+              <option value="mps">MPS (Apple)</option>
+            </select>
+          </div>
+          <div class="train-field"><label>Run Name</label><input type="text" id="tr-name" value="vehicle_v1" /></div>
+        </div>
+        <div id="train-log"></div>
+        <div class="d-flex gap-5">
+          <button class="btn btn-primary flex-1 justify-center" id="btn-train"><i
+              class="fa-solid fa-play"></i> Start
+            Training</button>
+          <button class="btn btn-danger" id="btn-stop-train"><i class="fa-solid fa-stop"></i> Stop</button>
+        </div>
+        <div id="train-status" class="fs-11 text-slate-dark text-center mt-5"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- IMAGE MODAL -->
+  <div id="image-modal">
+    <button class="im-close" onclick="closeImageModal()">×</button>
+    <div id="im-content">
+      <div id="im-left">
+        <!-- Full image and boxes drawn dynamically -->
+      </div>
+      <div id="im-right">
+        <div class="im-title" id="im-title">image.jpg</div>
+        <div class="im-meta" id="im-meta">Size: 0x0 | Split: train</div>
+        <div class="field-label mt-10">Objects in Image</div>
+        <div class="im-classes" id="im-classes">
+          <!-- Badges go here -->
+        </div>
+        <div class="d-flex gap-10 my-10">
+          <button class="btn btn-secondary flex-1" id="btn-modal-prev">← Prev</button>
+          <button class="btn btn-secondary flex-1" id="btn-modal-next">Next →</button>
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-jump-anno"><i class="fa-solid fa-pen"></i> Jump to
+          Annotation</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- ADD IMAGES MODAL -->
+  <div id="add-images-modal" class="screen hidden modal-backdrop">
+    <div class="modal-content modal-shadow bg-darker-panel p-20 border-radius-8 w-400 border-dark">
+      <h3 class="text-white mb-15 fs-18"><i class="fa-solid fa-images text-blue"></i> Add More Images</h3>
+
+      <div class="field-label">Select Folder <span class="hint">(containing images to add)</span></div>
+      <div class="d-flex gap-8 mb-16">
+        <input type="text" id="add-src-input" class="glass-input flex-1" placeholder="Folder path..." readonly />
+        <button class="btn btn-secondary" id="btn-browse-add-src"><i class="fa-solid fa-folder"></i></button>
+      </div>
+      <div id="new-info" class="fs-11 text-green-info mt-neg-10 mb-12 d-none"></div>
+
+      <div id="add-ingest-prog" class="prog-wrap">
+        <div class="prog-header"><span>Copying...</span><span id="add-ip-num">0 / 0</span></div>
+        <div class="prog-track">
+          <div class="prog-bar" id="add-ip-bar"></div>
+        </div>
+        <div class="prog-status" id="add-ip-status"></div>
+      </div>
+
+      <div class="d-flex gap-10 mt-20">
+        <button class="btn btn-secondary flex-1 justify-center" id="btn-cancel-add">Cancel</button>
+        <button class="btn btn-primary flex-1 justify-center" id="btn-confirm-add"><i
+            class="fa-solid fa-download"></i> Load</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP MODAL -->
+  <div id="help-modal" class="screen d-none z-300">
+    <div class="card glass-card max-w-800 max-h-90vh overflow-y-auto">
+      <div class="card-title d-flex justify-between align-center mb-20">
+        <span><i class="fa-solid fa-circle-question text-blue"></i> Help & Shortcuts</span>
+        <button class="im-close fs-24 pos-static" id="help-close" onclick="document.getElementById('help-modal').classList.add('d-none')">&times;</button>
+      </div>
+      
+      <h3 class="text-white mb-10 fs-16">🔄 End-to-End Workflow</h3>
+      <ol class="text-slate-light fs-13 lh-16 ml-20 mb-20">
+        <li><b>Select Model</b>: Pick any supported model file (.pt, .onnx, etc.). The tool auto-detects your GPU and extracts model classes.</li>
+        <li><b>Ingest Images</b>: Select a source folder and click "Load Images". Hardlinking prevents duplicating image data.</li>
+        <li><b>Review & Annotate</b>: YOLO will pre-annotate images in the background. Use the draw mode and hotkeys to perfect your dataset.</li>
+        <li><b>Auto-Split Dataset</b>: Configure your Train/Valid/Test ratios and execute "Auto-Split Dataset".</li>
+        <li><b>Train Model</b>: Go to the Training panel, adjust hyperparameters, and click "Start Training".</li>
+        <li><b>Export</b>: Return to the Grid View and click "Export Dataset" to download the finalized package.</li>
+      </ol>
+      
+      <h3 class="text-white mb-10 fs-16">⌨️ Essential Keyboard Shortcuts</h3>
+      <div class="grid-2 gap-10">
+        <div class="bg-black-trans-20 p-10 border-radius-8">
+          <ul class="list-none text-slate-light fs-13 lh-18">
+            <li><span class="hk">D</span> Toggle Draw mode</li>
+            <li><span class="hk">F</span> Fit image to screen</li>
+            <li><span class="hk">C</span> Copy boxes from previous</li>
+            <li><span class="hk">J</span> Jump to next unannotated</li>
+            <li><span class="hk">Q</span> / <span class="hk">E</span> Cycle box class</li>
+            <li><span class="hk">1</span> - <span class="hk">9</span> Set class 1-9</li>
+          </ul>
+        </div>
+        <div class="bg-black-trans-20 p-10 border-radius-8">
+          <ul class="list-none text-slate-light fs-13 lh-18">
+            <li><span class="hk">←</span> / <span class="hk">→</span> Prev / Next image</li>
+            <li><span class="hk">Enter</span> Save & jump to next</li>
+            <li><span class="hk">Del</span> Delete box</li>
+            <li><span class="hk">Ctrl+Z</span> / <span class="hk">Y</span> Undo / Redo</li>
+            <li><span class="hk">Wheel</span> Zoom in/out</li>
+            <li><span class="hk">Mid-drag</span> Pan canvas</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEALTH DASHBOARD MODAL -->
+  <div class="modal-overlay" id="health-modal">
+    <div class="modal-content max-w-600">
+      <h2 class="fs-18 mb-12"><i class="fa-solid fa-heart-pulse"></i> Dataset Health Dashboard</h2>
+      <div id="health-loading" class="text-center p-30 text-slate-light"><i class="fa-solid fa-spinner fa-spin"></i> Scanning entire dataset...</div>
+      
+      <div id="health-results" class="d-none">
+        <div class="d-flex justify-between bg-darker-panel p-12 border-radius-6 mb-12">
+          <div>
+            <div class="fs-12 text-slate fw-600 text-uppercase">Health Score</div>
+            <div id="health-score" class="fs-32 fw-800 text-green">100</div>
+          </div>
+          <div class="text-right">
+            <div class="fs-12 text-slate fw-600 text-uppercase">Dataset Stats</div>
+            <div class="fs-14 fw-600 text-gray-light mt-4"><span id="health-total-imgs">0</span> Images</div>
+            <div class="fs-14 fw-600 text-gray-light"><span id="health-total-boxes">0</span> Annotations</div>
+          </div>
+        </div>
+
+        <h3 class="fs-13 text-slate-light fw-600 text-uppercase mb-8">Anomaly Scan Results</h3>
+        
+        <div id="health-issues-list" class="d-flex flex-col gap-8">
+          <!-- Dynamically populated rows -->
+        </div>
+
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px;">
+        <button class="btn btn-primary" id="btn-health-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>

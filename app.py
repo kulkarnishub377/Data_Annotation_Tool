@@ -1458,7 +1458,7 @@ def api_export():
 # ─── MAIN ────────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return send_file(os.path.join(APP_DIR, "index.html"))
 
 @app.route("/style.css")
 def serve_css():
