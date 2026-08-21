@@ -1,5 +1,6 @@
 import os
 import io
+import sys
 import json
 import shutil
 import random
@@ -16,15 +17,14 @@ import tempfile
 import re
 import configparser
 from dotenv import load_dotenv
-import tkinter as tk
-from tkinter import filedialog
 
 load_dotenv()
 
 # ─── CONFIGURATION ───────────────────────────────────────────────────────────
 config = configparser.ConfigParser()
 config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.ini")
-config.read(config_path)
+if os.path.exists(config_path):
+    config.read(config_path)
 
 # ─── APP ─────────────────────────────────────────────────────────────────────
 app = Flask(__name__, template_folder='.')
@@ -33,12 +33,12 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 if config.has_option("Paths", "BASE_DIR"):
     BASE_DIR = config.get("Paths", "BASE_DIR")
 else:
-    BASE_DIR = os.environ.get("BASE_DIR", r"D:\model_train")
+    BASE_DIR = os.environ.get("BASE_DIR", os.path.dirname(os.path.abspath(__file__)))
 
 if config.has_option("Paths", "MODELS_DIR"):
     MODELS_DIR = config.get("Paths", "MODELS_DIR")
 else:
-    MODELS_DIR = BASE_DIR
+    MODELS_DIR = os.environ.get("MODELS_DIR", os.path.join(BASE_DIR, "models"))
 
 _current_dataset_name = "default"
 if config.has_option("Paths", "OUTPUT_DIR"):
