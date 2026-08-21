@@ -1292,47 +1292,6 @@ document.getElementById("btn-zoom-in").addEventListener("click", () => { zoomSca
 document.getElementById("btn-zoom-out").addEventListener("click", () => { zoomScale = Math.max(0.2, zoomScale / 1.3); renderCanvas(); });
 document.getElementById("btn-fit").addEventListener("click", fitView);
 
-// ─── TRAINING ────────────────────────────────────────────────────────────────
-let trainES = null;
-
-async function startTraining() {
-    const model = document.getElementById("tr-custom").value || document.getElementById("tr-model").value;
-    const cfg = {
-        model, epochs: document.getElementById("tr-epochs").value,
-        batch: document.getElementById("tr-batch").value,
-        imgsz: document.getElementById("tr-imgsz").value,
-        lr0: document.getElementById("tr-lr").value,
-        device: document.getElementById("tr-device").value,
-        name: document.getElementById("tr-name").value,
-    };
-    const log = document.getElementById("train-log");
-    log.innerHTML = '<span class="train-log-line highlight">Starting training…</span>\n';
-    document.getElementById("btn-train").disabled = true;
-    document.getElementById("train-status").textContent = "⏳ Training in progress…";
-
-    const res = await fetch("/api/train", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg) });
-    const d = await res.json();
-    if (d.error) { showToast("❌ " + d.error, true); document.getElementById("btn-train").disabled = false; return; }
-
-    if (trainES) trainES.close();
-    trainES = new EventSource("/api/train/logs");
-    trainES.onmessage = e => {
-        const p = JSON.parse(e.data);
-        const line = document.createElement("div");
-        line.className = "train-log-line" + (p.line?.includes("Epoch") || (p.line || "").includes("mAP") ? " highlight" : "");
-        line.textContent = p.line || "";
-        log.appendChild(line); log.scrollTop = log.scrollHeight;
-        if (p.done) { trainES.close(); document.getElementById("btn-train").disabled = false; document.getElementById("train-status").textContent = "✅ Training complete!"; }
-    };
-}
-
-async function stopTraining() {
-    await fetch("/api/train/stop", { method: "POST" });
-    if (trainES) trainES.close();
-    document.getElementById("btn-train").disabled = false;
-    document.getElementById("train-status").textContent = "⏹ Stopped.";
-}
-
 // ─── AUTO-SPLIT ──────────────────────────────────────────────────────────────
 async function doAutoSplit() {
     const rT = parseInt(document.getElementById("sp-train").value) || 70;
@@ -1341,22 +1300,22 @@ async function doAutoSplit() {
     const tot = rT + rV + rX;
     const ratios = [rT / tot, rV / tot, rX / tot];
     const btn = document.getElementById("btn-auto-split");
-    btn.disabled = true; btn.textContent = "🔀 Splitting…";
+    btn.disabled = true; btn.textContent = "Splitting...";
 
     const res = await fetch("/api/auto_split", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ratios }) });
     const d = await res.json();
     if (d.status === "ok") {
         const el = document.getElementById("split-result");
-        el.textContent = `✅ Done — Train:${d.counts.train}  Valid:${d.counts.valid}  Test:${d.counts.test}  Skipped(unannotated):${d.counts.unannotated_skipped || 0}`;
+        el.textContent = `Done: Train ${d.counts.train} | Valid ${d.counts.valid} | Test ${d.counts.test} (Skipped unannotated: ${d.counts.unannotated_skipped || 0})`;
         el.style.display = "block";
         await updateStats();
         currentIndex = -1; boxes = []; allImages = []; filteredImages = [];
         await loadSplitImages(currentSplit);
-        showToast("✅ Dataset split complete!", false, "ok");
+        showToast("Dataset split complete!", "ok");
     } else {
-        showToast("❌ " + JSON.stringify(d), true);
+        showToast("Error: " + JSON.stringify(d), "err");
     }
-    btn.disabled = false; btn.textContent = "🔀 Auto-Split Dataset";
+    btn.disabled = false; btn.textContent = "Auto-Split Dataset";
 }
 
 // ─── WIRING ──────────────────────────────────────────────────────────────────
@@ -1381,7 +1340,7 @@ document.querySelectorAll(".rtab").forEach(tab => {
         tab.classList.add("active");
         document.getElementById("panel-" + tab.dataset.panel).classList.add("active");
         if (tab.dataset.panel === "split") { updateStats(); updateClassChart(); }
-        if (tab.dataset.panel === "train") pollTrainStatus();
+        if (tab.dataset.panel === "train") { checkGpuTrainingSupport(); }
     });
 });
 
@@ -1433,38 +1392,12 @@ document.getElementById("add-box-btn").addEventListener("click", () => {
 document.getElementById("nav-prev").addEventListener("click", () => navigateTo(currentIndex - 1));
 document.getElementById("nav-next").addEventListener("click", () => navigateTo(currentIndex + 1));
 document.getElementById("btn-auto-split").addEventListener("click", doAutoSplit);
-document.getElementById("btn-train").addEventListener("click", startTraining);
-document.getElementById("btn-stop-train").addEventListener("click", stopTraining);
 
 // Extra keyboard shortcuts (J=jump unannotated)
 window.addEventListener("keydown", e => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
     if (e.key === "j") jumpToNextUnannotated();
 }, true);
-
-async function pollTrainStatus() {
-    const d = await fetch("/api/train/status").then(r => r.json()).catch(() => ({ status: "idle" }));
-    document.getElementById("train-status").textContent =
-        d.status === "running" ? "⏳ Training in progress…" :
-            d.status === "done" ? `✅ Done (exit code ${d.exit_code})` : "";
-            
-    const btnTrain = document.getElementById("btn-train");
-    const dev = document.getElementById("tr-device").value;
-    if (d.status === "running") {
-        btnTrain.disabled = true;
-        btnTrain.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Training...';
-    } else if (dev === "cpu") {
-        btnTrain.disabled = true;
-        btnTrain.innerHTML = '<i class="fa-solid fa-ban"></i> CPU Training Disabled';
-    } else {
-        btnTrain.disabled = false;
-        btnTrain.innerHTML = '<i class="fa-solid fa-play"></i> Start Training';
-    }
-}
-
-document.getElementById("tr-device").addEventListener("change", () => {
-    pollTrainStatus(); // Re-evaluates button state
-});
 
 // ─── GRID VIEW LOGIC ─────────────────────────────────────────────────────────
 let appMode = "annotate"; // 'annotate' | 'grid'
@@ -2190,7 +2123,11 @@ async function checkGpuTrainingSupport() {
                 gpuWarning.classList.remove("d-none");
             }
             if (trainStatus) {
-                trainStatus.textContent = "GPU Required: CPU training disabled for performance.";
+                trainStatus.textContent = "";
+            }
+            const logBox = document.getElementById("train-log");
+            if (logBox) {
+                logBox.innerHTML = '<div class="p-8 fs-11 text-slate-darker">Ready for GPU training.</div>';
             }
             
             const noGpuOpt = document.createElement("option");
@@ -2207,6 +2144,9 @@ async function checkGpuTrainingSupport() {
             }
             if (gpuWarning) {
                 gpuWarning.classList.add("d-none");
+            }
+            if (trainStatus) {
+                trainStatus.textContent = "";
             }
         }
     } catch (e) {
