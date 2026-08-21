@@ -18,6 +18,12 @@ import re
 import configparser
 from dotenv import load_dotenv
 
+# ─── WINDOWLESS GUI STDOUT/STDERR GUARDS ──────────────────────────────────────
+if sys.stdout is None:
+    sys.stdout = io.StringIO()
+if sys.stderr is None:
+    sys.stderr = io.StringIO()
+
 load_dotenv()
 
 # ─── PYTORCH 2.6+ COMPATIBILITY ──────────────────────────────────────────────

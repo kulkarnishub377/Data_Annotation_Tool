@@ -1,23 +1,21 @@
 @echo off
-title Data Annotation Studio Launcher
 setlocal
-
 cd /d "%~dp0"
 
-echo ================================================================
-echo   Data Annotation Studio
-echo ================================================================
+if exist "dist\DataAnnotationStudio\DataAnnotationStudio.exe" (
+    start "" "dist\DataAnnotationStudio\DataAnnotationStudio.exe"
+    exit /b 0
+)
+
+if exist "venv\Scripts\pythonw.exe" (
+    start "" "venv\Scripts\pythonw.exe" app.py
+    exit /b 0
+)
 
 if exist "venv\Scripts\python.exe" (
-    echo [*] Starting Data Annotation Studio in Virtual Environment...
-    "venv\Scripts\python.exe" app.py %*
-) else (
-    echo [*] Starting Data Annotation Studio with system Python...
-    python app.py %*
+    start "" "venv\Scripts\python.exe" app.py
+    exit /b 0
 )
 
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo [ERROR] Application exited with error code %ERRORLEVEL%.
-    pause
-)
+start "" python app.py
+exit /b 0
