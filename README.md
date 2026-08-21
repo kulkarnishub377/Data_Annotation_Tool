@@ -155,6 +155,33 @@ Then open your browser and navigate to: **[http://127.0.0.1:8051](http://127.0.0
 
 ---
 
+## 🛠️ Dataset Utilities & Resizing
+
+Included in the `scripts/` directory are production utilities for dataset maintenance and image dimension conversion:
+
+### Resizing Datasets to 640x640 (or Multiple Sizes)
+Convert an entire dataset to standard YOLO input resolutions with mathematical bounding box and polygon transformation:
+
+```bash
+# Standard 640x640 letterbox conversion
+python scripts/resize_dataset.py --input ./dataset_default --size 640
+
+# Batch export to multiple sizes simultaneously (640, 1280, 416)
+python scripts/resize_dataset.py --input ./dataset_default --sizes 640 1280 416
+
+# Custom dimensions & resize mode (letterbox, stretch, max_edge)
+python scripts/resize_dataset.py --input ./dataset_default --width 640 --height 640 --mode stretch
+```
+
+### Dataset Frame Cleanup
+Remove specific corrupted frame ranges from database and disk:
+
+```bash
+python scripts/cleanup.py --dir ./dataset_default --start 6601 --end 8200
+```
+
+---
+
 ## 🧪 Testing
 
 Run the automated unit test suite:

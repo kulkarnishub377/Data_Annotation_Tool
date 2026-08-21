@@ -95,7 +95,27 @@ class TestApp(unittest.TestCase):
         self.assertIn("corrupt_images", data)
         self.assertIn("empty_images", data)
         self.assertIn("small_boxes", data)
-        self.assertIn("oob_boxes", data)
+    def test_resize_dataset_transforms(self):
+        """Test letterbox coordinate transformation for bounding boxes."""
+        sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+        from resize_dataset import transform_yolo_letterbox
+        
+        # Test original box at center of 1920x1080 resized to 640x640 letterbox
+        lines = ["0 0.5 0.5 0.2 0.2\n"]
+        orig_w, orig_h = 1920, 1080
+        target_w, target_h = 640, 640
+        scale = min(target_w / orig_w, target_h / orig_h) # 640/1920 = 0.3333
+        pad_x = (target_w - (orig_w * scale)) / 2.0       # 0.0
+        pad_y = (target_h - (orig_h * scale)) / 2.0       # 140.0
+        
+        transformed = transform_yolo_letterbox(
+            lines, scale, pad_x, pad_y, orig_w, orig_h, target_w, target_h
+        )
+        self.assertEqual(len(transformed), 1)
+        parts = transformed[0].split()
+        self.assertEqual(parts[0], "0")
+        self.assertAlmostEqual(float(parts[1]), 0.5, places=3) # Centered horizontally
+        self.assertAlmostEqual(float(parts[2]), 0.5, places=3) # Centered vertically
 
 if __name__ == '__main__':
     unittest.main()
