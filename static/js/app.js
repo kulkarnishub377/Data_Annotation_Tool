@@ -139,10 +139,9 @@ async function initSetup() {
     const st = await fetch("/api/state").then(r => r.json()).catch(() => ({ ready: false }));
     if (st.ready) {
         datasetType = st.dataset_type || "bbox";
-        const c = st.counts;
-        document.getElementById("existing-text").textContent =
-            `Dataset found — Train:${c.train.total}  Valid:${c.valid.total}  Test:${c.test.total}`;
-        document.getElementById("existing-banner").style.display = "flex";
+        if (st.dataset_dir) {
+            checkDatasetInfo(st.dataset_dir);
+        }
     }
 
     // Load available model files (all formats)
@@ -447,89 +446,123 @@ function buildClassDropdowns() {
     // Sidebar box selectors are rebuilt in updateBoxPanel
 }
 
-document.getElementById("btn-open").addEventListener("click", openAnnotator);
-document.getElementById("btn-goto-setup").addEventListener("click", () => {
-    document.getElementById("app").style.display = "none";
-    document.getElementById("setup-screen").classList.remove("hidden");
-    initSetup();
-});
-
-document.getElementById("btn-load-existing").addEventListener("click", async () => {
-    const src = document.getElementById("existing-dataset-input").value;
-    if (!src) return;
-    document.getElementById("btn-load-existing").disabled = true;
-    document.getElementById("btn-load-existing").innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
-    
-    const res = await fetch("/api/load_existing_dataset", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dataset_dir: src })
+const btnGotoSetup = document.getElementById("btn-goto-setup");
+if (btnGotoSetup) {
+    btnGotoSetup.addEventListener("click", () => {
+        const appEl = document.getElementById("app");
+        if (appEl) {
+            appEl.style.display = "none";
+            appEl.classList.add("hidden");
+        }
+        const setupScreen = document.getElementById("setup-screen");
+        if (setupScreen) {
+            setupScreen.classList.remove("hidden");
+            setupScreen.style.display = "flex";
+        }
+        initSetup();
     });
-    
-    if (res.ok) {
-        openAnnotator();
-    } else {
-        const err = await res.json();
-        showToast("❌ Error: " + err.error, true);
-        document.getElementById("btn-load-existing").disabled = false;
-        document.getElementById("btn-load-existing").innerHTML = `<i class="fa-solid fa-folder-open"></i> Open Selected Dataset`;
-    }
-});
+}
 
-document.getElementById("btn-ingest").addEventListener("click", async () => {
-    const src = document.getElementById("src-input").value;
-    const type = document.getElementById("dataset-type-select").value;
-    if (!src) return;
-    document.getElementById("btn-ingest").disabled = true;
-    document.getElementById("ingest-prog").style.display = "block";
-    document.getElementById("ip-status").textContent = "Starting…";
-
-    const { job_id } = await fetch("/api/ingest", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source_dir: src, dataset_type: type })
-    }).then(r => r.json());
-
-    const es = new EventSource(`/api/progress/${job_id}`);
-    es.onmessage = e => {
-        const p = JSON.parse(e.data);
-        const pct = p.total > 0 ? Math.round(p.done / p.total * 100) : 0;
-        document.getElementById("ip-bar").style.width = pct + "%";
-        document.getElementById("ip-num").textContent = `${p.done} / ${p.total}`;
-        document.getElementById("ip-status").innerHTML =
-            p.status === "linking" ? `<i class="fa-solid fa-link"></i> Linking images… ${pct}%` :
-                p.status === "copying" ? `<i class="fa-solid fa-folder-open"></i> Copying images… ${pct}%` : p.status;
-        if (p.status === "done") {
-            es.close();
-            document.getElementById("ip-status").innerHTML = `<i class="fa-solid fa-check-circle"></i> Done! Opening annotator…`;
-            setTimeout(openAnnotator, 600);
+const btnLoadExisting = document.getElementById("btn-load-existing");
+if (btnLoadExisting) {
+    btnLoadExisting.addEventListener("click", async () => {
+        const src = document.getElementById("existing-dataset-input").value;
+        if (!src) return;
+        btnLoadExisting.disabled = true;
+        btnLoadExisting.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
+        
+        try {
+            const res = await fetch("/api/load_existing_dataset", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ dataset_dir: src })
+            });
+            
+            if (res.ok) {
+                await openAnnotator();
+            } else {
+                const err = await res.json().catch(() => ({ error: "Failed to load dataset" }));
+                showToast("❌ Error: " + (err.error || "Failed to load dataset"), true);
+            }
+        } catch (err) {
+            showToast("❌ Connection error while opening dataset", true);
+        } finally {
+            btnLoadExisting.disabled = false;
+            btnLoadExisting.innerHTML = `<i class="fa-solid fa-folder-open"></i> Open Dataset`;
         }
-        if (String(p.status).startsWith("error")) {
-            es.close();
-            document.getElementById("ip-status").innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ` + p.status;
-            document.getElementById("btn-ingest").disabled = false;
-        }
-    };
-});
+    });
+}
+
+const btnIngest = document.getElementById("btn-ingest");
+if (btnIngest) {
+    btnIngest.addEventListener("click", async () => {
+        const src = document.getElementById("src-input").value;
+        const type = document.getElementById("dataset-type-select").value;
+        if (!src) return;
+        btnIngest.disabled = true;
+        document.getElementById("ingest-prog").style.display = "block";
+        document.getElementById("ip-status").textContent = "Starting…";
+
+        const { job_id } = await fetch("/api/ingest", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ source_dir: src, dataset_type: type })
+        }).then(r => r.json());
+
+        const es = new EventSource(`/api/progress/${job_id}`);
+        es.onmessage = e => {
+            const p = JSON.parse(e.data);
+            const pct = p.total > 0 ? Math.round(p.done / p.total * 100) : 0;
+            document.getElementById("ip-bar").style.width = pct + "%";
+            document.getElementById("ip-num").textContent = `${p.done} / ${p.total}`;
+            document.getElementById("ip-status").innerHTML =
+                p.status === "linking" ? `<i class="fa-solid fa-link"></i> Linking images… ${pct}%` :
+                    p.status === "copying" ? `<i class="fa-solid fa-folder-open"></i> Copying images… ${pct}%` : p.status;
+            if (p.status === "done") {
+                es.close();
+                document.getElementById("ip-status").innerHTML = `<i class="fa-solid fa-check-circle"></i> Done! Opening annotator…`;
+                setTimeout(openAnnotator, 500);
+            }
+            if (String(p.status).startsWith("error")) {
+                es.close();
+                document.getElementById("ip-status").innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ` + p.status;
+                btnIngest.disabled = false;
+            }
+        };
+    });
+}
 
 async function openAnnotator() {
-    // Fetch classes from backend if they aren't loaded yet
-    if (CLASS_NAMES.length === 0) {
-        const res = await fetch("/api/classes").then(r => r.json()).catch(() => ({ classes: [] }));
-        if (res.classes && res.classes.length > 0) {
-            CLASS_NAMES = res.classes;
+    try {
+        // Fetch classes from backend if they aren't loaded yet
+        if (CLASS_NAMES.length === 0) {
+            const res = await fetch("/api/classes").then(r => r.json()).catch(() => ({ classes: [] }));
+            if (res.classes && res.classes.length > 0) {
+                CLASS_NAMES = res.classes;
+            }
         }
-    }
 
-    document.getElementById("setup-screen").classList.add("hidden");
-    document.getElementById("app").style.display = "grid";
-    buildClassDropdowns();
-    _sessionStart = Date.now();
-    // Restore last active split (default to train)
-    const lastSplit = localStorage.getItem("lastSplit") || "train";
-    currentSplit = lastSplit;
-    // Highlight the correct split tab
-    document.querySelectorAll(".stab").forEach(t => t.classList.toggle("active", t.dataset.split === lastSplit));
-    await loadSplitImages(lastSplit);
-    updateStats();
+        const setupScreen = document.getElementById("setup-screen");
+        if (setupScreen) {
+            setupScreen.classList.add("hidden");
+            setupScreen.style.display = "none";
+        }
+        const appEl = document.getElementById("app");
+        if (appEl) {
+            appEl.classList.remove("hidden");
+            appEl.style.display = "grid";
+        }
+        buildClassDropdowns();
+        _sessionStart = Date.now();
+        // Restore last active split (default to train)
+        const lastSplit = localStorage.getItem("lastSplit") || "train";
+        currentSplit = lastSplit;
+        // Highlight the correct split tab
+        document.querySelectorAll(".stab").forEach(t => t.classList.toggle("active", t.dataset.split === lastSplit));
+        await loadSplitImages(lastSplit);
+        updateStats();
+    } catch (err) {
+        console.error("openAnnotator error:", err);
+        showToast("❌ Error opening annotator: " + err.message, true);
+    }
 }
 
 // ─── AUTO-SAVE TOGGLE ────────────────────────────────────────────────────────
