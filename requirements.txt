@@ -1,4 +1,5 @@
-flask==3.0.3
-ultralytics==8.2.60
-pillow==10.4.0
-python-dotenv==1.0.1
+flask>=3.0.0
+ultralytics>=8.2.0
+pillow>=10.0.0
+python-dotenv>=1.0.0
+opencv-python>=4.6.0
