@@ -21,101 +21,120 @@
 <body>
 
   <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
-  <div id="setup-screen" class="screen setup-modern">
-    <div class="setup-header pos-rel-max-900">
-      <button class="btn btn-primary btn-glow btn-circle-help" id="btn-help-setup" title="Help & Shortcuts"><i class="fa-solid fa-question"></i></button>
-      <img src="/static/assets/logo_transparent.png" alt="Data Annotation Tool" class="setup-logo-img mb-10" style="width: 80px; height: 80px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.45));">
-      <h1>Data Annotation Tool</h1>
-      <p>Professional Computer Vision Workflows</p>
-    </div>
-
-    <div class="setup-grid">
-      <!-- Column 1: Model Setup -->
-      <div class="glass-card">
-        <div class="card-step">1</div>
-        <h2>Model Configuration</h2>
-        <p class="card-desc">Load your YOLO model to automatically extract classes and configure inference.</p>
-        
-        <div class="field-label">Pre-trained Base Model</div>
-        <select id="model-preset" class="field-select glass-input mb-10"></select>
-        
-        <div class="divider-text my-10"><span>OR</span></div>
-        
-        <div class="field-label">Local Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
-        <select id="model-select" class="field-select glass-input"></select>
-        
-        <div class="field-label">Inference Device</div>
-        <select id="device-select" class="field-select glass-input">
-          <option value="auto">Auto-Detect (Recommended)</option>
-          <option value="cpu">CPU</option>
-          <option value="0">GPU 0 (CUDA)</option>
-          <option value="mps">Apple MPS</option>
-        </select>
-        <div id="device-autodetect" class="device-status">⏳ Detecting devices…</div>
-        
-        <button class="btn btn-primary btn-glow btn-full" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load Model</button>
-        
-        <div id="classes-preview" class="d-none mt-15">
-          <div class="field-label">Detected Classes</div>
-          <div id="classes-tags" class="class-tags-container"></div>
+  <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
+  <div id="setup-screen" class="screen setup-screen-wrapper">
+    <!-- Top-left branding navbar -->
+    <header class="setup-navbar">
+      <div class="d-flex align-center gap-12">
+        <img src="/static/assets/logo_transparent.png" alt="Logo" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.55));">
+        <div>
+          <div class="fs-15 fw-700 text-white letter-spacing-wide">Data Annotation Tool</div>
+          <div class="fs-10 text-slate">Professional Computer Vision Workflows • v1.0.0</div>
         </div>
       </div>
+      <div class="d-flex align-center gap-10">
+        <button class="btn btn-secondary p-6-14 fs-12 d-flex align-center gap-6" id="btn-help-setup" title="Help & Shortcuts">
+          <i class="fa-solid fa-circle-question text-blue"></i> Shortcuts & Help
+        </button>
+      </div>
+    </header>
 
-      <!-- Column 2: Dataset Setup -->
-      <div class="glass-card">
-        <div class="card-step">2</div>
-        <h2>Dataset Management</h2>
-        
-        <div class="dataset-section">
-          <div class="field-label">Dataset Folder</div>
-          <select id="existing-dataset-select" class="field-select glass-input mb-12">
-            <option value="">— choose an existing dataset from root —</option>
+    <!-- Main Content Body -->
+    <div class="setup-body">
+      <div class="setup-cards-grid">
+        <!-- Column 1: Model Setup -->
+        <div class="glass-setup-card">
+          <div class="card-step-badge">1</div>
+          <h2 class="setup-card-title"><i class="fa-solid fa-brain text-blue"></i> Model Configuration</h2>
+          <p class="setup-card-desc">Load pre-trained YOLO or custom .pt weights for auto-annotation.</p>
+          
+          <div class="field-label">Pre-trained Base Model</div>
+          <select id="model-preset" class="field-select glass-input mb-8"></select>
+          
+          <div class="divider-text-compact"><span>OR</span></div>
+          
+          <div class="field-label">Local Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
+          <select id="model-select" class="field-select glass-input mb-12"></select>
+          
+          <div class="field-label">Inference Device</div>
+          <select id="device-select" class="field-select glass-input">
+            <option value="auto">Auto-Detect (Recommended)</option>
+            <option value="cpu">CPU</option>
+            <option value="0">GPU 0 (CUDA)</option>
+            <option value="mps">Apple MPS</option>
           </select>
-          <div class="d-flex gap-8 mb-16">
-            <input type="text" id="existing-dataset-input" class="glass-input flex-1" placeholder="Or browse custom folder..." readonly />
-            <button class="btn btn-primary btn-glow" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
+          <div id="device-autodetect" class="device-status mt-6 mb-12">Detecting hardware devices…</div>
+          
+          <button class="btn btn-primary btn-glow btn-full" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load Model</button>
+          
+          <div id="classes-preview" class="d-none mt-12">
+            <div class="field-label">Detected Classes</div>
+            <div id="classes-tags" class="class-tags-container"></div>
           </div>
-          <div id="existing-info" class="text-green-info d-none"></div>
-          <button class="btn btn-primary btn-glow btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
         </div>
-        
-        <div class="divider-text"><span>OR</span></div>
-        
-        <div class="dataset-section">
-          <div class="field-label">Create New Dataset (Select Source)</div>
-          <div class="d-flex gap-8 mb-12">
-            <input type="text" id="src-input" class="glass-input flex-1" placeholder="Source folder path..." readonly />
-            <button class="btn btn-primary btn-glow" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
-          </div>
-          <div id="src-info" class="text-green-info d-none"></div>
-          <div id="img-badge" class="mb-14 d-none"></div>
+
+        <!-- Column 2: Dataset Setup -->
+        <div class="glass-setup-card">
+          <div class="card-step-badge">2</div>
+          <h2 class="setup-card-title"><i class="fa-solid fa-folder-tree text-cyan"></i> Dataset Management</h2>
+          <p class="setup-card-desc">Open an existing dataset or ingest raw images to begin.</p>
           
-          <div class="field-label">Dataset Type</div>
-          <select id="dataset-type-select" class="field-select glass-input mb-14">
-            <option value="bbox">Bounding Box (YOLO Object Detection)</option>
-            <option value="polygon">Polygon (YOLO Instance Segmentation)</option>
-          </select>
-          
-          <div class="field-label">Split Ratio <span class="hint">(Train / Valid / Test)</span></div>
-          <div class="ratio-row glass-ratios">
-            <div class="ratio-col"><label>T %</label><input type="number" id="r-train" value="70" min="1" max="98" /></div>
-            <div class="ratio-col"><label>V %</label><input type="number" id="r-valid" value="20" min="1" max="98" /></div>
-            <div class="ratio-col"><label>Ts %</label><input type="number" id="r-test" value="10" min="1" max="98" /></div>
+          <div class="dataset-section">
+            <div class="field-label">Existing Dataset</div>
+            <select id="existing-dataset-select" class="field-select glass-input mb-8">
+              <option value="">— choose an existing dataset from root —</option>
+            </select>
+            <div class="d-flex gap-8 mb-10">
+              <input type="text" id="existing-dataset-input" class="glass-input flex-1" placeholder="Or custom directory..." readonly />
+              <button class="btn btn-secondary" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
+            </div>
+            <div id="existing-info" class="text-green-info d-none mb-8"></div>
+            <button class="btn btn-primary btn-glow btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
           </div>
           
-          <button class="btn btn-primary btn-glow btn-full" id="btn-ingest" disabled><i class="fa-solid fa-download"></i> Ingest Images</button>
+          <div class="divider-text-compact"><span>OR CREATE NEW</span></div>
           
-          <div class="prog-wrap glass-prog" id="ingest-prog">
-            <div class="prog-header"><span id="ip-label">Linking images…</span><span id="ip-num">0 / 0</span></div>
-            <div class="prog-track"><div class="prog-bar" id="ip-bar"></div></div>
-            <div class="prog-status" id="ip-status"></div>
+          <div class="dataset-section">
+            <div class="field-label">Source Images Directory</div>
+            <div class="d-flex gap-8 mb-8">
+              <input type="text" id="src-input" class="glass-input flex-1" placeholder="Folder path..." readonly />
+              <button class="btn btn-secondary" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
+            </div>
+            <div id="src-info" class="text-green-info d-none mb-6"></div>
+            <div id="img-badge" class="mb-10 d-none"></div>
+            
+            <div class="d-flex gap-10 mb-10">
+              <div class="flex-1">
+                <div class="field-label">Type</div>
+                <select id="dataset-type-select" class="field-select glass-input">
+                  <option value="bbox">Bounding Box</option>
+                  <option value="polygon">Polygon</option>
+                </select>
+              </div>
+              <div class="flex-1">
+                <div class="field-label">Split (T / V / Ts)</div>
+                <div class="ratio-row glass-ratios mb-0">
+                  <div class="ratio-col"><label>T</label><input type="number" id="r-train" value="70" min="1" max="98" /></div>
+                  <div class="ratio-col"><label>V</label><input type="number" id="r-valid" value="20" min="1" max="98" /></div>
+                  <div class="ratio-col"><label>Ts</label><input type="number" id="r-test" value="10" min="1" max="98" /></div>
+                </div>
+              </div>
+            </div>
+            
+            <button class="btn btn-primary btn-glow btn-full" id="btn-ingest" disabled><i class="fa-solid fa-download"></i> Ingest Images</button>
+            
+            <div class="prog-wrap glass-prog mt-8" id="ingest-prog">
+              <div class="prog-header"><span id="ip-label">Linking images…</span><span id="ip-num">0 / 0</span></div>
+              <div class="prog-track"><div class="prog-bar" id="ip-bar"></div></div>
+              <div class="prog-status" id="ip-status"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
     
-    <div id="existing-banner" class="glass-banner d-none">
-      <span id="existing-text">Dataset found</span>
+    <div id="existing-banner" class="glass-banner-fixed d-none">
+      <span id="existing-text" class="text-white fw-600 fs-13">Dataset found</span>
       <button class="btn btn-primary btn-glow" id="btn-open">Open Annotator →</button>
     </div>
   </div>

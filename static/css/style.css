@@ -2031,3 +2031,128 @@
         background: #15803d !important;
         box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
     }
+
+    /* ── SETUP SCREEN 100VH MODERN REDESIGN ── */
+    .setup-screen-wrapper {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: radial-gradient(circle at 50% 10%, #172138 0%, #090b10 75%);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        padding: 0 !important;
+    }
+
+    .setup-navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 24px;
+        background: rgba(9, 11, 16, 0.75);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+        height: 54px;
+    }
+
+    .setup-body {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 24px;
+        overflow-y: auto;
+    }
+
+    .setup-cards-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        max-width: 1100px;
+        width: 100%;
+        align-items: start;
+    }
+
+    .glass-setup-card {
+        background: rgba(18, 22, 34, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 12px;
+        padding: 20px 24px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(16px);
+        position: relative;
+    }
+
+    .card-step-badge {
+        position: absolute;
+        top: 16px;
+        right: 18px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #1e3a5f;
+        color: #60a5fa;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .setup-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .setup-card-desc {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 14px;
+    }
+
+    .divider-text-compact {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        color: #475569;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin: 8px 0;
+    }
+
+    .divider-text-compact::before,
+    .divider-text-compact::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .divider-text-compact span {
+        padding: 0 8px;
+    }
+
+    .glass-banner-fixed {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(18, 22, 34, 0.95);
+        border: 1px solid #22c55e66;
+        padding: 12px 24px;
+        border-radius: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        z-index: 120;
+    }
