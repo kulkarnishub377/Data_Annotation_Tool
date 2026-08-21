@@ -1631,18 +1631,76 @@ def index():
 
 @app.route("/style.css")
 def serve_css():
-    return send_file(os.path.join(os.path.dirname(__file__), "static", "css", "style.css"))
+    return send_file(os.path.join(APP_DIR, "static", "css", "style.css"))
 
 @app.route("/app.js")
 def serve_js():
-    return send_file(os.path.join(os.path.dirname(__file__), "static", "js", "app.js"))
+    return send_file(os.path.join(APP_DIR, "static", "js", "app.js"))
+
+
+def _run_flask_server(host, port):
+    try:
+        app.run(debug=False, host=host, port=port, threaded=True, use_reloader=False)
+    except Exception as e:
+        print(f"[ERROR] Flask server error: {e}")
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Data Annotation Studio")
+    parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=8051, help="Port number (default: 8051)")
+    parser.add_argument("--no-gui", "--headless", action="store_true", help="Run in headless server mode without GUI window")
+    parser.add_argument("--browser", action="store_true", help="Open default web browser instead of native desktop window")
+    args, _ = parser.parse_known_args()
+
+    init_db()
+    url = f"http://{args.host}:{args.port}"
+    print("=" * 64)
+    print("  Data Annotation Studio")
+    print(f"  Version: {__version__}")
+    print(f"  Output : {OUTPUT_DIR}")
+    print(f"  Server : {url}")
+    print("=" * 64)
+
+    server_thread = threading.Thread(target=_run_flask_server, args=(args.host, args.port), daemon=True)
+    server_thread.start()
+    time.sleep(0.8)
+
+    use_gui = not (args.no_gui or os.environ.get("NO_GUI") == "1")
+
+    if use_gui and not args.browser:
+        try:
+            import webview
+            print("[*] Launching native desktop window (pywebview)...")
+            window = webview.create_window(
+                title="Data Annotation Studio",
+                url=url,
+                width=1440,
+                height=900,
+                min_size=(1024, 700),
+                background_color="#0b0f19"
+            )
+            webview.start()
+            print("[*] Window closed. Shutting down...")
+            sys.exit(0)
+        except Exception as e:
+            print(f"[!] pywebview window launch note ({e}). Falling back to browser...")
+
+    if args.browser or use_gui:
+        import webbrowser
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n[*] Shutting down server...")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
-    init_db()
-    print("=" * 62)
-    print("  Data Annotation Tool")
-    print(f"  Output : {OUTPUT_DIR}")
-    print(f"  Open   : http://127.0.0.1:8051")
-    print("=" * 62)
-    app.run(debug=False, host="0.0.0.0", port=8051, threaded=True)
+    main()
