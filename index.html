@@ -445,12 +445,11 @@
             </div>
           </div>
           <div class="train-two">
-            <div class="train-field"><label>Device</label>
+            <div class="train-field"><label>Device <span class="text-green-info fs-10">(GPU Only)</span></label>
               <select id="tr-device">
-                <option value="0">GPU 0 (CUDA)</option>
+                <option value="0" selected>GPU 0 (CUDA)</option>
                 <option value="1">GPU 1 (CUDA)</option>
-                <option value="mps">MPS (Apple)</option>
-                <option value="cpu">CPU</option>
+                <option value="mps">MPS (Apple Silicon)</option>
               </select>
             </div>
             <div class="train-field"><label>Run Name</label><input type="text" id="tr-name" value="vehicle_v1" /></div>
@@ -461,6 +460,10 @@
                 class="fa-solid fa-play"></i> Start
               Training</button>
             <button class="btn btn-danger" id="btn-stop-train"><i class="fa-solid fa-stop"></i> Stop</button>
+          </div>
+          <div id="gpu-train-warning" class="mt-8 p-8 bg-darker-panel border-red-dark border-radius-6 fs-11 text-red-warning text-center d-none">
+            <i class="fa-solid fa-triangle-exclamation mr-4"></i>
+            <strong>GPU Required:</strong> CPU training is disabled. Connect a CUDA GPU or Apple Silicon MPS to train models.
           </div>
           <div id="train-status" class="fs-11 text-slate-dark text-center mt-5"></div>
         </div>
