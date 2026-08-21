@@ -2101,9 +2101,173 @@ document.getElementById("btn-tool-compress")?.addEventListener("click", async ()
     } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Compress & Package';
-        progStatus.textContent = `❌ ${err.message}`;
-        if (typeof showToast === "function") showToast(`❌ ${err.message}`, "err");
+        progStatus.textContent = `Error: ${err.message}`;
+        if (typeof showToast === "function") showToast(`Compression error: ${err.message}`, "err");
     }
 });
+
+// ─── GPU-ONLY MODEL TRAINING LOGIC ──────────────────────────────────────────
+let _trainEventSource = null;
+
+async function checkGpuTrainingSupport() {
+    const devSelect = document.getElementById("tr-device");
+    const btnTrain = document.getElementById("btn-train");
+    const gpuWarning = document.getElementById("gpu-train-warning");
+    const trainStatus = document.getElementById("train-status");
+    
+    try {
+        const res = await fetch("/api/device_info");
+        const info = await res.json();
+        
+        if (!devSelect) return;
+        devSelect.innerHTML = "";
+        
+        const gpus = info.cuda || [];
+        const hasMps = !!info.mps;
+        const hasGpu = gpus.length > 0 || hasMps;
+        
+        if (gpus.length > 0) {
+            gpus.forEach(gpu => {
+                const opt = document.createElement("option");
+                opt.value = String(gpu.id);
+                opt.textContent = `GPU ${gpu.id}: ${gpu.name} (${gpu.total_gb} GB)`;
+                devSelect.appendChild(opt);
+            });
+        }
+        
+        if (hasMps) {
+            const opt = document.createElement("option");
+            opt.value = "mps";
+            opt.textContent = "Apple Silicon MPS (GPU)";
+            devSelect.appendChild(opt);
+        }
+        
+        if (!hasGpu) {
+            // Disable Training Button
+            if (btnTrain) {
+                btnTrain.disabled = true;
+                btnTrain.style.opacity = "0.5";
+                btnTrain.style.cursor = "not-allowed";
+                btnTrain.title = "A CUDA GPU or Apple Silicon MPS device is required for training.";
+            }
+            if (gpuWarning) {
+                gpuWarning.classList.remove("d-none");
+            }
+            if (trainStatus) {
+                trainStatus.textContent = "GPU Required: CPU training disabled for performance.";
+            }
+            
+            const noGpuOpt = document.createElement("option");
+            noGpuOpt.value = "none";
+            noGpuOpt.textContent = "No GPU Available (Disabled)";
+            noGpuOpt.disabled = true;
+            devSelect.appendChild(noGpuOpt);
+        } else {
+            if (btnTrain) {
+                btnTrain.disabled = false;
+                btnTrain.style.opacity = "1";
+                btnTrain.style.cursor = "pointer";
+                btnTrain.title = "Start training on GPU";
+            }
+            if (gpuWarning) {
+                gpuWarning.classList.add("d-none");
+            }
+        }
+    } catch (e) {
+        console.error("Device check error", e);
+    }
+}
+
+document.getElementById("btn-train")?.addEventListener("click", async () => {
+    const btnTrain = document.getElementById("btn-train");
+    const logBox = document.getElementById("train-log");
+    const statusBox = document.getElementById("train-status");
+    const device = document.getElementById("tr-device")?.value;
+    
+    if (!device || device === "cpu" || device === "none") {
+        if (typeof showToast === "function") {
+            showToast("Training on CPU is disabled. A CUDA GPU or MPS is required.", "err");
+        }
+        return;
+    }
+    
+    const payload = {
+        model: document.getElementById("tr-model")?.value || "yolov8n.pt",
+        custom_model: document.getElementById("tr-custom")?.value || "",
+        epochs: parseInt(document.getElementById("tr-epochs")?.value) || 50,
+        batch: parseInt(document.getElementById("tr-batch")?.value) || 16,
+        imgsz: parseInt(document.getElementById("tr-imgsz")?.value) || 640,
+        lr0: parseFloat(document.getElementById("tr-lr")?.value) || 0.01,
+        device: device,
+        name: document.getElementById("tr-name")?.value || "vehicle_v1"
+    };
+    
+    btnTrain.disabled = true;
+    if (logBox) logBox.innerHTML = '<div class="text-slate-light">Initializing GPU training process...</div>';
+    if (statusBox) statusBox.textContent = "Starting GPU training...";
+    
+    try {
+        const res = await fetch("/api/train", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(data.error || "Failed to start training");
+        }
+        
+        if (statusBox) statusBox.textContent = "Training in progress...";
+        
+        // Listen to SSE logs
+        if (_trainEventSource) _trainEventSource.close();
+        _trainEventSource = new EventSource("/api/train/logs");
+        
+        _trainEventSource.onmessage = (event) => {
+            const parsed = JSON.parse(event.data);
+            if (parsed.line && logBox) {
+                const lineDiv = document.createElement("div");
+                lineDiv.textContent = parsed.line;
+                lineDiv.className = "fs-11 font-mono text-slate-light";
+                logBox.appendChild(lineDiv);
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+            if (parsed.done) {
+                _trainEventSource.close();
+                btnTrain.disabled = false;
+                if (statusBox) statusBox.textContent = "Training finished.";
+                if (typeof showToast === "function") showToast("Training completed successfully!", "ok");
+            }
+        };
+        
+        _trainEventSource.onerror = () => {
+            _trainEventSource.close();
+            btnTrain.disabled = false;
+        };
+        
+    } catch (err) {
+        btnTrain.disabled = false;
+        if (statusBox) statusBox.textContent = `Error: ${err.message}`;
+        if (typeof showToast === "function") showToast(`Training error: ${err.message}`, "err");
+    }
+});
+
+document.getElementById("btn-stop-train")?.addEventListener("click", async () => {
+    try {
+        await fetch("/api/train/stop", { method: "POST" });
+        if (_trainEventSource) _trainEventSource.close();
+        const btnTrain = document.getElementById("btn-train");
+        if (btnTrain) btnTrain.disabled = false;
+        const statusBox = document.getElementById("train-status");
+        if (statusBox) statusBox.textContent = "Training stopped.";
+        if (typeof showToast === "function") showToast("Training stopped by user.", "ok");
+    } catch (err) {
+        console.error("Stop train error", err);
+    }
+});
+
+// Run GPU check on initialization
+checkGpuTrainingSupport();
 
 
