@@ -1,10 +1,12 @@
-# Python
+# Python & Bytecode
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 env/
+venv/
+ENV/
 build/
 develop-eggs/
 dist/
@@ -20,15 +22,18 @@ var/
 .installed.cfg
 *.egg
 
-# Virtual Environment
-venv/
+# Environment & Configs
 .env
+.env.local
+config.ini
 
-# SQLite
+# SQLite Databases
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 
-# YOLO / ML Models
+# YOLO & Machine Learning Weights
 runs/
 *.pt
 *.onnx
@@ -36,21 +41,15 @@ runs/
 *.tflite
 *.torchscript
 
-# Output directories
+# Generated Datasets & Working Media
+dataset_*/
 annotated_dataset/
 vedio/
+*.zip
 
-# OS
+# Operating System & IDE
 .DS_Store
 Thumbs.db
-
-# Images
-*.jpg
-*.jpeg
-*.png
-*.bmp
-*.webp
-*.mp4   
-.vscode
-.vscode/settings.json
-
+.idea/
+.vscode/*
+!.vscode/settings.json
