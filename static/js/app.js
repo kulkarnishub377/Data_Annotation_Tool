@@ -167,8 +167,42 @@ async function initSetup() {
     });
     
     if (mpre) {
-        mdata.presets.forEach(f => {
-            const o = document.createElement('option'); o.value = f; o.textContent = f; mpre.appendChild(o);
+        mpre.innerHTML = '<option value="">— select pre-trained model to auto-download —</option>';
+        
+        const categories = {
+            "⚡ YOLO26 (Next-Gen Vision)": [
+                { val: "yolo26n.pt", name: "YOLO26 Nano (Ultra-Fast, Light)" },
+                { val: "yolo26s.pt", name: "YOLO26 Small (Balanced Speed & Acc)" },
+                { val: "yolo26m.pt", name: "YOLO26 Medium (Recommended)" },
+                { val: "yolo26l.pt", name: "YOLO26 Large (High Accuracy)" },
+                { val: "yolo26x.pt", name: "YOLO26 XLarge (Maximum Precision)" },
+            ],
+            "🚀 YOLO11 (Latest Generation)": [
+                { val: "yolo11n.pt", name: "YOLO11 Nano" },
+                { val: "yolo11s.pt", name: "YOLO11 Small" },
+                { val: "yolo11m.pt", name: "YOLO11 Medium" },
+                { val: "yolo11l.pt", name: "YOLO11 Large" },
+                { val: "yolo11x.pt", name: "YOLO11 XLarge" },
+            ],
+            "📦 YOLOv8 (Standard Benchmark)": [
+                { val: "yolov8n.pt", name: "YOLOv8 Nano" },
+                { val: "yolov8s.pt", name: "YOLOv8 Small" },
+                { val: "yolov8m.pt", name: "YOLOv8 Medium" },
+                { val: "yolov8l.pt", name: "YOLOv8 Large" },
+                { val: "yolov8x.pt", name: "YOLOv8 XLarge" },
+            ]
+        };
+
+        Object.entries(categories).forEach(([label, models]) => {
+            const grp = document.createElement('optgroup');
+            grp.label = label;
+            models.forEach(m => {
+                const o = document.createElement('option');
+                o.value = m.val;
+                o.textContent = `${m.val}  —  ${m.name}`;
+                grp.appendChild(o);
+            });
+            mpre.appendChild(grp);
         });
         
         // Mutually exclusive
