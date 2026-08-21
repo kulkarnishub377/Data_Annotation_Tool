@@ -116,7 +116,8 @@ def get_device_info():
 
 
 # Defaults (overridden at runtime via /api/set_model or DB)
-_model_path   = r"D:\model_train\bestv8_p.pt"
+_default_custom = os.path.join(MODELS_DIR, "bestv8_p.pt")
+_model_path   = _default_custom if os.path.exists(_default_custom) else os.environ.get("MODEL_PATH", "yolov8n.pt")
 _device       = auto_detect_device()   # ← auto GPU on start
 _class_names  = ['auto_rickshaw', 'bike', 'bus', 'car', 'mini_bus', 'tractor', 'truck']
 
@@ -648,15 +649,16 @@ def api_class_stats():
 @app.route("/api/browse_folder")
 def api_browse_folder():
     try:
-        # Tkinter requires to run on the main thread ideally, but for simple dialogs on Windows/Linux this usually works.
+        import tkinter as tk
+        from tkinter import filedialog
         root = tk.Tk()
         root.withdraw()
         root.attributes('-topmost', True)
         folder = filedialog.askdirectory(parent=root, title="Select Directory")
         root.destroy()
-        return jsonify({"path": folder})
+        return jsonify({"path": folder or ""})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"path": "", "error": str(e)})
 
 @app.route("/api/source_dirs")
 def api_source_dirs():
@@ -1242,17 +1244,18 @@ def api_train():
     name       = data.get("name",    "vehicle_detect")
     yaml_path  = os.path.join(OUTPUT_DIR, "data.yaml")
 
-    if device == "cpu":
-        return jsonify({"error": "Training on CPU is disabled to prevent system freeze. A CUDA GPU or MPS is required."}), 400
-
     if not os.path.exists(yaml_path):
         return jsonify({"error": "data.yaml not found — run auto-split first"}), 400
 
     # ── Release inference model from GPU before training ──
     reset_model()
 
+    # If user trains on CPU, apply conservative batch size to protect system RAM
+    if device == "cpu" and batch > 16:
+        batch = 16
+
     cmd = [
-        "python", "-m", "ultralytics", "train",
+        sys.executable, "-m", "ultralytics", "train",
         f"model={model_file}",
         f"data={yaml_path}",
         f"epochs={epochs}",
@@ -1374,11 +1377,11 @@ def api_export():
                     img_path = os.path.join(img_dir, img_file)
                     h, w = 1000, 1000
                     try:
-                        import cv2
-                        im = cv2.imread(img_path)
-                        if im is not None:
-                            h, w = im.shape[:2]
-                    except: pass
+                        from PIL import Image as PILImage
+                        with PILImage.open(img_path) as im:
+                            w, h = im.size
+                    except Exception:
+                        pass
                     
                     coco["images"].append({"id": img_id, "file_name": img_file, "width": w, "height": h})
                     zf.write(img_path, f"{split}/images/{img_file}")
