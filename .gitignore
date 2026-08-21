@@ -52,3 +52,5 @@ Thumbs.db
 *.webp
 *.mp4   
 .vscode
+.vscode/settings.json
+
