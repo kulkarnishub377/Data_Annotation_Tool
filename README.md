@@ -1,5 +1,6 @@
 # Free Open Source Data Annotation Tool for Computer Vision 🚀
 
+[![Release](https://img.shields.io/badge/Release-v1.0.0-blue?style=for-the-badge&logo=github)](https://github.com/kulkarnishub377/Data_Annotation_Tool/releases/tag/v1.0.0)
 [![CI Tests](https://github.com/kulkarnishub377/Data_Annotation_Tool/actions/workflows/ci.yml/badge.svg)](https://github.com/kulkarnishub377/Data_Annotation_Tool/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue?style=for-the-badge&logo=python)
 ![Flask](https://img.shields.io/badge/Flask-3.0+-black?style=for-the-badge&logo=flask)

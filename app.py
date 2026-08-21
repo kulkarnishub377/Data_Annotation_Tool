@@ -39,6 +39,7 @@ if os.path.exists(config_path):
     config.read(config_path)
 
 # ─── APP ─────────────────────────────────────────────────────────────────────
+__version__ = "1.0.0"
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=APP_DIR, static_folder=os.path.join(APP_DIR, 'static'))
 app.config['TEMPLATES_AUTO_RELOAD'] = True
