@@ -15,10 +15,21 @@ from werkzeug.utils import secure_filename
 import uuid
 import tempfile
 import re
-import configparser
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# ─── PYTORCH 2.6+ COMPATIBILITY ──────────────────────────────────────────────
+try:
+    import torch
+    _orig_torch_load = torch.load
+    def _safe_torch_load(*args, **kwargs):
+        if "weights_only" not in kwargs:
+            kwargs["weights_only"] = False
+        return _orig_torch_load(*args, **kwargs)
+    torch.load = _safe_torch_load
+except Exception:
+    pass
 
 # ─── CONFIGURATION ───────────────────────────────────────────────────────────
 config = configparser.ConfigParser()
