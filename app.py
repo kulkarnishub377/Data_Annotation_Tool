@@ -109,7 +109,7 @@ def auto_detect_device():
 
 def get_device_info():
     """Returns a dict describing available compute devices."""
-    info = {"cpu": True, "cuda": [], "mps": False, "selected": _device}
+    info = {"cpu": True, "cuda": [], "mps": False, "selected": _device, "has_gpu": False}
     try:
         import torch
         for i in range(torch.cuda.device_count()):
@@ -123,6 +123,7 @@ def get_device_info():
             })
         info["mps"] = bool(getattr(getattr(torch, 'backends', None), 'mps', None) and
                             torch.backends.mps.is_available())
+        info["has_gpu"] = bool(len(info["cuda"]) > 0 or info["mps"])
     except Exception:
         pass
     return info
@@ -1270,11 +1271,9 @@ def api_train():
         return jsonify({"error": "data.yaml not found — run auto-split first"}), 400
 
     # ── Release inference model from GPU before training ──
-    reset_model()
-
-    # If user trains on CPU, apply conservative batch size to protect system RAM
-    if device == "cpu" and batch > 16:
-        batch = 16
+    # Enforce GPU-only training restriction (CPU training disabled)
+    if device == "cpu" or (device != "mps" and not device.isdigit()):
+        return jsonify({"error": "Training on CPU is disabled. A dedicated CUDA GPU or Apple Silicon MPS device is required."}), 400
 
     cmd = [
         sys.executable, "-m", "ultralytics", "train",

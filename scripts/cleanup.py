@@ -9,18 +9,26 @@ Usage:
   python scripts/cleanup.py --dir ./dataset_default --start 6601 --end 8200
 """
 
+import sys
 import sqlite3
 import re
 import os
 import argparse
 from pathlib import Path
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 def cleanup_frames(dataset_dir, start_num, end_num):
     dataset_path = Path(dataset_dir).resolve()
     db_path = dataset_path / "state.db"
     
     if not db_path.exists():
-        print(f"❌ Error: Database not found at {db_path}")
+        print(f"[ERROR] Database not found at {db_path}")
         return
 
     conn = sqlite3.connect(str(db_path))
@@ -66,10 +74,10 @@ def cleanup_frames(dataset_dir, start_num, end_num):
             conn.execute(f"DELETE FROM images WHERE id IN ({placeholders})", chunk)
             
         conn.commit()
-        print(f"✅ Successfully deleted {len(to_delete)} records from the database.")
-        print(f"🗑️ Deleted {files_deleted} physical image/label files.")
+        print(f"[OK] Successfully deleted {len(to_delete)} records from the database.")
+        print(f"[*] Deleted {files_deleted} physical image/label files.")
     else:
-        print(f"ℹ️ No frames found matching range {start_num} to {end_num}.")
+        print(f"[INFO] No frames found matching range {start_num} to {end_num}.")
         
     conn.close()
 

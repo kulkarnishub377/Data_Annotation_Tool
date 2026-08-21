@@ -301,16 +301,16 @@ def resize_dataset(input_dir, output_dir, target_w, target_h, mode="letterbox", 
     if yaml_src.exists():
         yaml_dst = output_path / "data.yaml"
         shutil.copy2(yaml_src, yaml_dst)
-        print(f"📄 Copied data.yaml -> {yaml_dst}")
+        print(f"[*] Copied data.yaml -> {yaml_dst}")
 
     # Copy classes/metadata if present
     for extra in ["classes.txt", "notes.json", "state.db"]:
         extra_src = input_path / extra
         if extra_src.exists():
             shutil.copy2(extra_src, output_path / extra)
-            print(f"💾 Copied {extra} -> {output_path / extra}")
+            print(f"[*] Copied {extra} -> {output_path / extra}")
 
-    print(f"🎉 Dataset saved to: {output_path}\n")
+    print(f"[OK] Dataset saved to: {output_path}\n")
     return True
 
 
