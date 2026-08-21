@@ -27,7 +27,7 @@ if os.path.exists(config_path):
     config.read(config_path)
 
 # ─── APP ─────────────────────────────────────────────────────────────────────
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__, template_folder='.', static_folder='static')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 if config.has_option("Paths", "BASE_DIR"):
@@ -1461,11 +1461,11 @@ def index():
 
 @app.route("/style.css")
 def serve_css():
-    return send_file(os.path.join(os.path.dirname(__file__), "style.css"))
+    return send_file(os.path.join(os.path.dirname(__file__), "static", "css", "style.css"))
 
 @app.route("/app.js")
 def serve_js():
-    return send_file(os.path.join(os.path.dirname(__file__), "app.js"))
+    return send_file(os.path.join(os.path.dirname(__file__), "static", "js", "app.js"))
 
 
 if __name__ == "__main__":
