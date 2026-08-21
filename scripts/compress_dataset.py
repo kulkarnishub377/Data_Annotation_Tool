@@ -27,6 +27,13 @@ import argparse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # Ignore patterns for clean dataset export
 IGNORED_PATTERNS = {
     ".db-wal", ".db-shm", ".DS_Store", "Thumbs.db", "__pycache__", ".git", ".idea", ".vscode"
@@ -79,7 +86,7 @@ def create_multithreaded_zip(file_list, output_path, compression=zipfile.ZIP_DEF
     total_files = len(file_list)
     total_bytes = sum(item[2] for item in file_list)
     
-    print(f"📦 Compressing {total_files} files ({total_bytes / (1024*1024):.2f} MB) using {threads} threads...")
+    print(f"[*] Compressing {total_files} files ({total_bytes / (1024*1024):.2f} MB) using {threads} threads...")
     
     start_time = time.time()
     processed_count = 0
@@ -101,7 +108,7 @@ def create_multithreaded_zip(file_list, output_path, compression=zipfile.ZIP_DEF
                         processed_count += 1
                         written_bytes += fsize
                     else:
-                        print(f"\n⚠️ Warning: Failed to read {rel_path}: {err}")
+                        print(f"\n[!] Warning: Failed to read {rel_path}: {err}")
                     
                     pct = (processed_count / max(1, total_files)) * 100
                     print(f"   [{pct:5.1f}%] Processed {processed_count}/{total_files} files...", end="\r", flush=True)
@@ -110,7 +117,7 @@ def create_multithreaded_zip(file_list, output_path, compression=zipfile.ZIP_DEF
     archive_size = os.path.getsize(output_path)
     ratio = (1.0 - (archive_size / max(1, total_bytes))) * 100.0 if total_bytes > 0 else 0.0
 
-    print(f"\n✅ ZIP created in {elapsed:.2f}s")
+    print(f"\n[OK] ZIP created in {elapsed:.2f}s")
     print(f"   Original Size: {total_bytes / (1024*1024):.2f} MB")
     print(f"   Archive Size : {archive_size / (1024*1024):.2f} MB")
     print(f"   Space Saved  : {ratio:.1f}%\n")
@@ -122,7 +129,7 @@ def create_tar_archive(file_list, output_path, mode="w:gz"):
     total_files = len(file_list)
     total_bytes = sum(item[2] for item in file_list)
     
-    print(f"📦 Creating {mode.upper()} archive for {total_files} files...")
+    print(f"[*] Creating {mode.upper()} archive for {total_files} files...")
     start_time = time.time()
     
     with tarfile.open(output_path, mode) as tar:
@@ -136,7 +143,7 @@ def create_tar_archive(file_list, output_path, mode="w:gz"):
     archive_size = os.path.getsize(output_path)
     ratio = (1.0 - (archive_size / max(1, total_bytes))) * 100.0 if total_bytes > 0 else 0.0
 
-    print(f"\n✅ Archive created in {elapsed:.2f}s")
+    print(f"\n[OK] Archive created in {elapsed:.2f}s")
     print(f"   Original Size: {total_bytes / (1024*1024):.2f} MB")
     print(f"   Archive Size : {archive_size / (1024*1024):.2f} MB")
     print(f"   Space Saved  : {ratio:.1f}%\n")
@@ -145,18 +152,18 @@ def create_tar_archive(file_list, output_path, mode="w:gz"):
 
 def verify_zip_archive(archive_path):
     """Test the integrity of a generated ZIP archive."""
-    print(f"🔍 Verifying integrity of '{archive_path}'...")
+    print(f"[*] Verifying integrity of '{archive_path}'...")
     try:
         with zipfile.ZipFile(archive_path, "r") as zf:
             corrupted = zf.testzip()
             if corrupted is None:
-                print("✨ Verification SUCCESS: Archive is healthy with zero corrupted files!")
+                print("[OK] Verification SUCCESS: Archive is healthy with zero corrupted files!")
                 return True
             else:
-                print(f"❌ Verification FAILED: First corrupted file found at '{corrupted}'")
+                print(f"[FAIL] Verification FAILED: First corrupted file found at '{corrupted}'")
                 return False
     except Exception as e:
-        print(f"❌ Verification ERROR: {e}")
+        print(f"[FAIL] Verification ERROR: {e}")
         return False
 
 
@@ -164,7 +171,7 @@ def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", 
     """Main compression handler."""
     input_path = Path(input_dir).resolve()
     if not input_path.exists():
-        print(f"❌ Error: Input path '{input_path}' does not exist.")
+        print(f"[ERROR] Input path '{input_path}' does not exist.")
         return False
 
     threads = threads or min(32, (os.cpu_count() or 4) * 2)
@@ -180,7 +187,7 @@ def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", 
     os.makedirs(output_path.parent, exist_ok=True)
 
     print("=" * 64)
-    print(f"🚀 Multi-Threaded Dataset Compressor")
+    print(f"[*] Multi-Threaded Dataset Compressor")
     print(f"   Source Directory : {input_path}")
     print(f"   Destination File : {output_path}")
     print(f"   Format           : {fmt.upper()}")
@@ -190,7 +197,7 @@ def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", 
 
     file_list, total_bytes = collect_files_to_archive(input_path)
     if not file_list:
-        print("⚠️ No files found in the dataset directory to compress.")
+        print("[!] No files found in the dataset directory to compress.")
         return False
 
     success = False
@@ -211,16 +218,16 @@ def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", 
     elif fmt.lower() == "7z":
         try:
             import py7zr
-            print(f"📦 Compressing {len(file_list)} files to 7Z using py7zr...")
+            print(f"[*] Compressing {len(file_list)} files to 7Z using py7zr...")
             start_time = time.time()
             with py7zr.SevenZipFile(output_path, 'w') as archive:
                 for full_path, rel_path, _ in file_list:
                     archive.write(full_path, arcname=rel_path)
             elapsed = time.time() - start_time
-            print(f"✅ 7Z created in {elapsed:.2f}s ({os.path.getsize(output_path)/(1024*1024):.2f} MB)")
+            print(f"[OK] 7Z created in {elapsed:.2f}s ({os.path.getsize(output_path)/(1024*1024):.2f} MB)")
             success = True
         except ImportError:
-            print("ℹ️ py7zr not installed. Falling back to multi-threaded high-compression ZIP (LZMA)...")
+            print("[INFO] py7zr not installed. Falling back to multi-threaded high-compression ZIP (LZMA)...")
             output_zip = output_path.with_suffix(".zip")
             success = create_multithreaded_zip(file_list, str(output_zip), zipfile.ZIP_LZMA, level, threads)
             output_path = output_zip
