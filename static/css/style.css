@@ -2032,30 +2032,37 @@
         box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
     }
 
-    /* ── SETUP SCREEN 100VH MODERN REDESIGN ── */
-    .setup-screen-wrapper {
+    /* ── SETUP SCREEN 100VH ULTRA-PREMIUM REDESIGN ── */
+    #setup-screen.setup-screen-wrapper {
         position: fixed;
         inset: 0;
         z-index: 100;
-        background: radial-gradient(circle at 50% 10%, #172138 0%, #090b10 75%);
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
+        background: radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+                    radial-gradient(circle at 85% 85%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                    #090b10;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        align-items: stretch !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        overflow: hidden !important;
         padding: 0 !important;
+        margin: 0 !important;
     }
 
     .setup-navbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 24px;
-        background: rgba(9, 11, 16, 0.75);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        flex-shrink: 0;
-        height: 54px;
+        width: 100% !important;
+        height: 60px !important;
+        padding: 0 32px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        background: rgba(13, 17, 26, 0.85) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        flex-shrink: 0 !important;
     }
 
     .setup-body {
@@ -2063,96 +2070,105 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 12px 24px;
-        overflow-y: auto;
+        padding: 20px 32px 30px 32px;
+        overflow: hidden;
     }
 
     .setup-cards-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        max-width: 1100px;
+        grid-template-columns: 1fr 1.15fr;
+        gap: 28px;
+        max-width: 1200px;
         width: 100%;
-        align-items: start;
+        align-items: stretch;
     }
 
     .glass-setup-card {
-        background: rgba(18, 22, 34, 0.85);
+        background: rgba(16, 21, 33, 0.75);
         border: 1px solid rgba(255, 255, 255, 0.09);
-        border-radius: 12px;
-        padding: 20px 24px;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(16px);
+        border-radius: 16px;
+        padding: 24px 28px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .glass-setup-card:hover {
+        border-color: rgba(6, 182, 212, 0.3);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(6, 182, 212, 0.1);
     }
 
     .card-step-badge {
         position: absolute;
-        top: 16px;
-        right: 18px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: #1e3a5f;
-        color: #60a5fa;
-        font-size: 12px;
+        top: 20px;
+        right: 22px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: rgba(6, 182, 212, 0.15);
+        color: #38bdf8;
+        font-size: 11px;
         font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid rgba(96, 165, 250, 0.3);
+        letter-spacing: 0.5px;
+        border: 1px solid rgba(56, 189, 248, 0.3);
     }
 
     .setup-card-title {
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 700;
         color: #ffffff;
         margin-bottom: 4px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
 
     .setup-card-desc {
-        font-size: 12px;
-        color: #64748b;
-        margin-bottom: 14px;
+        font-size: 12.5px;
+        color: #94a3b8;
+        margin-bottom: 16px;
+        line-height: 1.4;
     }
 
     .divider-text-compact {
         display: flex;
         align-items: center;
         text-align: center;
-        color: #475569;
-        font-size: 10px;
+        color: #64748b;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 1px;
-        margin: 8px 0;
+        letter-spacing: 1.2px;
+        margin: 12px 0;
     }
 
     .divider-text-compact::before,
     .divider-text-compact::after {
         content: '';
         flex: 1;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .divider-text-compact span {
-        padding: 0 8px;
+        padding: 0 10px;
     }
 
     .glass-banner-fixed {
         position: fixed;
-        bottom: 20px;
+        bottom: 24px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(18, 22, 34, 0.95);
-        border: 1px solid #22c55e66;
-        padding: 12px 24px;
-        border-radius: 30px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(34, 197, 94, 0.5);
+        padding: 10px 24px;
+        border-radius: 40px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(34, 197, 94, 0.2);
         display: flex;
         align-items: center;
         gap: 16px;
         z-index: 120;
+        backdrop-filter: blur(16px);
     }
