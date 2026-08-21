@@ -162,6 +162,9 @@ def set_active_dataset(src_dir, is_existing=False):
 # ─── DATABASE ────────────────────────────────────────────────────────────────
 def get_db():
     """Thread-local SQLite connection with WAL enabled."""
+    db_dir = os.path.dirname(os.path.abspath(DB_PATH))
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
@@ -231,6 +234,12 @@ def init_db():
             _class_names = json.loads(saved_classes)
         except Exception:
             pass
+
+# Initialize DB on load
+try:
+    init_db()
+except Exception:
+    pass
 
 
 def db_get_meta(key, default=None):
