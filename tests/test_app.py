@@ -135,5 +135,25 @@ class TestApp(unittest.TestCase):
             self.assertTrue(os.path.exists(out_zip))
             self.assertTrue(verify_zip_archive(out_zip))
 
+    def test_api_tools_status(self):
+        """Test status endpoint for tools."""
+        res = self.app.get('/api/tools/status?job=resize')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("running", data)
+        self.assertIn("percent", data)
+        self.assertIn("status", data)
+
+    def test_api_tools_resize_endpoint(self):
+        """Test triggering resize via API."""
+        res = self.app.post('/api/tools/resize', json={
+            "size": 640,
+            "mode": "letterbox"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data.get("status"), "started")
+        self.assertEqual(data.get("job"), "resize")
+
 if __name__ == '__main__':
     unittest.main()

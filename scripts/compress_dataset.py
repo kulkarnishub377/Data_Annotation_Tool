@@ -81,12 +81,14 @@ def compress_file_data(item, compression_type, compresslevel=6):
         return (rel_path, None, file_size, False, str(e))
 
 
-def create_multithreaded_zip(file_list, output_path, compression=zipfile.ZIP_DEFLATED, level=6, threads=8):
+def create_multithreaded_zip(file_list, output_path, compression=zipfile.ZIP_DEFLATED, level=6, threads=8, progress_callback=None):
     """Create a ZIP archive using multi-threaded batch compression."""
     total_files = len(file_list)
     total_bytes = sum(item[2] for item in file_list)
     
     print(f"[*] Compressing {total_files} files ({total_bytes / (1024*1024):.2f} MB) using {threads} threads...")
+    if progress_callback:
+        progress_callback(0, total_files, f"Compressing {total_files} files...")
     
     start_time = time.time()
     processed_count = 0
@@ -110,6 +112,9 @@ def create_multithreaded_zip(file_list, output_path, compression=zipfile.ZIP_DEF
                     else:
                         print(f"\n[!] Warning: Failed to read {rel_path}: {err}")
                     
+                    if progress_callback and (processed_count % 10 == 0 or processed_count == total_files):
+                        progress_callback(processed_count, total_files, f"Archiving: {processed_count}/{total_files} files")
+                    
                     pct = (processed_count / max(1, total_files)) * 100
                     print(f"   [{pct:5.1f}%] Processed {processed_count}/{total_files} files...", end="\r", flush=True)
 
@@ -124,17 +129,21 @@ def create_multithreaded_zip(file_list, output_path, compression=zipfile.ZIP_DEF
     return True
 
 
-def create_tar_archive(file_list, output_path, mode="w:gz"):
+def create_tar_archive(file_list, output_path, mode="w:gz", progress_callback=None):
     """Create a TAR archive (e.g. .tar.gz, .tar.xz)."""
     total_files = len(file_list)
     total_bytes = sum(item[2] for item in file_list)
     
     print(f"[*] Creating {mode.upper()} archive for {total_files} files...")
+    if progress_callback:
+        progress_callback(0, total_files, f"Creating {mode} archive...")
     start_time = time.time()
     
     with tarfile.open(output_path, mode) as tar:
         for idx, (full_path, rel_path, fsize) in enumerate(file_list, start=1):
             tar.add(full_path, arcname=rel_path)
+            if progress_callback and (idx % 10 == 0 or idx == total_files):
+                progress_callback(idx, total_files, f"Archiving: {idx}/{total_files} files")
             if idx % 100 == 0 or idx == total_files:
                 pct = (idx / total_files) * 100
                 print(f"   [{pct:5.1f}%] Added {idx}/{total_files} files...", end="\r", flush=True)
@@ -167,11 +176,13 @@ def verify_zip_archive(archive_path):
         return False
 
 
-def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", level=6, threads=None, verify=False):
+def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", level=6, threads=None, verify=False, progress_callback=None):
     """Main compression handler."""
     input_path = Path(input_dir).resolve()
     if not input_path.exists():
         print(f"[ERROR] Input path '{input_path}' does not exist.")
+        if progress_callback:
+            progress_callback(0, 0, f"Input directory '{input_path}' does not exist.")
         return False
 
     threads = threads or min(32, (os.cpu_count() or 4) * 2)
@@ -198,6 +209,8 @@ def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", 
     file_list, total_bytes = collect_files_to_archive(input_path)
     if not file_list:
         print("[!] No files found in the dataset directory to compress.")
+        if progress_callback:
+            progress_callback(0, 0, "No files found to compress.")
         return False
 
     success = False
@@ -209,27 +222,31 @@ def compress_dataset(input_dir, output_file=None, fmt="zip", method="deflated", 
             "lzma": zipfile.ZIP_LZMA
         }
         comp = zip_methods.get(method.lower(), zipfile.ZIP_DEFLATED)
-        success = create_multithreaded_zip(file_list, str(output_path), comp, level, threads)
+        success = create_multithreaded_zip(file_list, str(output_path), comp, level, threads, progress_callback=progress_callback)
         
     elif fmt.lower() in ("tar.gz", "tgz"):
-        success = create_tar_archive(file_list, str(output_path), mode="w:gz")
+        success = create_tar_archive(file_list, str(output_path), mode="w:gz", progress_callback=progress_callback)
     elif fmt.lower() in ("tar.xz", "txz"):
-        success = create_tar_archive(file_list, str(output_path), mode="w:xz")
+        success = create_tar_archive(file_list, str(output_path), mode="w:xz", progress_callback=progress_callback)
     elif fmt.lower() == "7z":
         try:
             import py7zr
             print(f"[*] Compressing {len(file_list)} files to 7Z using py7zr...")
+            if progress_callback:
+                progress_callback(0, len(file_list), "Compressing with 7Z...")
             start_time = time.time()
             with py7zr.SevenZipFile(output_path, 'w') as archive:
-                for full_path, rel_path, _ in file_list:
+                for idx, (full_path, rel_path, _) in enumerate(file_list, start=1):
                     archive.write(full_path, arcname=rel_path)
+                    if progress_callback and (idx % 10 == 0 or idx == len(file_list)):
+                        progress_callback(idx, len(file_list), f"Compressing 7Z: {idx}/{len(file_list)}")
             elapsed = time.time() - start_time
             print(f"[OK] 7Z created in {elapsed:.2f}s ({os.path.getsize(output_path)/(1024*1024):.2f} MB)")
             success = True
         except ImportError:
             print("[INFO] py7zr not installed. Falling back to multi-threaded high-compression ZIP (LZMA)...")
             output_zip = output_path.with_suffix(".zip")
-            success = create_multithreaded_zip(file_list, str(output_zip), zipfile.ZIP_LZMA, level, threads)
+            success = create_multithreaded_zip(file_list, str(output_zip), zipfile.ZIP_LZMA, level, threads, progress_callback=progress_callback)
             output_path = output_zip
 
     if success and verify and str(output_path).lower().endswith(".zip"):

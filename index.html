@@ -392,68 +392,175 @@
         </div>
       </div>
 
-      <!-- TRAINING PANEL -->
+      <!-- TRAINING & TOOLS PANEL -->
       <div class="rpanel" id="panel-train">
-        <div class="train-field">
-          <label>Base Model</label>
-          <select id="tr-model">
-            <optgroup label="YOLO26 (Next-Gen)">
-              <option value="yolo26n.pt">YOLO26 Nano</option>
-              <option value="yolo26s.pt">YOLO26 Small</option>
-              <option value="yolo26m.pt">YOLO26 Medium</option>
-              <option value="yolo26l.pt">YOLO26 Large</option>
-              <option value="yolo26x.pt">YOLO26 XLarge</option>
-            </optgroup>
-            <optgroup label="YOLO11">
-              <option value="yolo11n.pt">YOLO11 Nano</option>
-              <option value="yolo11s.pt">YOLO11 Small</option>
-              <option value="yolo11m.pt">YOLO11 Medium</option>
-              <option value="yolo11l.pt">YOLO11 Large</option>
-              <option value="yolo11x.pt">YOLO11 XLarge</option>
-            </optgroup>
-            <optgroup label="YOLOv8">
-              <option value="yolov8n.pt">YOLOv8 Nano (fastest)</option>
-              <option value="yolov8s.pt">YOLOv8 Small</option>
-              <option value="yolov8m.pt" selected>YOLOv8 Medium</option>
-              <option value="yolov8l.pt">YOLOv8 Large</option>
-              <option value="yolov8x.pt">YOLOv8 XLarge (best)</option>
-            </optgroup>
-          </select>
+        <!-- Sub-Tabs Header -->
+        <div class="train-subtabs mb-12">
+          <button class="tsubtab active" data-tsub="train"><i class="fa-solid fa-fire"></i> Train</button>
+          <button class="tsubtab" data-tsub="resize"><i class="fa-solid fa-expand"></i> Resize</button>
+          <button class="tsubtab" data-tsub="compress"><i class="fa-solid fa-file-zipper"></i> Compress</button>
         </div>
-        <div class="train-field">
-          <label>Custom .pt file <span class="text-slate-darker">(overrides above)</span></label>
-          <select id="tr-custom"></select>
-        </div>
-        <div class="train-two">
-          <div class="train-field"><label>Epochs</label><input type="number" id="tr-epochs" value="50" min="1" /></div>
-          <div class="train-field"><label>Batch Size</label><input type="number" id="tr-batch" value="16" min="1" />
-          </div>
-        </div>
-        <div class="train-two">
-          <div class="train-field"><label>Image Size</label><input type="number" id="tr-imgsz" value="640" step="32" />
-          </div>
-          <div class="train-field"><label>LR (lr0)</label><input type="number" id="tr-lr" value="0.01" step="0.001" />
-          </div>
-        </div>
-        <div class="train-two">
-          <div class="train-field"><label>Device</label>
-            <select id="tr-device">
-              <option value="cpu">CPU</option>
-              <option value="0">GPU 0 (CUDA)</option>
-              <option value="1">GPU 1 (CUDA)</option>
-              <option value="mps">MPS (Apple)</option>
+
+        <!-- SUB-PANEL 1: MODEL TRAINING -->
+        <div class="tsubpanel active" id="tsub-panel-train">
+          <div class="train-field">
+            <label>Base Model</label>
+            <select id="tr-model">
+              <optgroup label="YOLO26 (Next-Gen)">
+                <option value="yolo26n.pt">YOLO26 Nano</option>
+                <option value="yolo26s.pt">YOLO26 Small</option>
+                <option value="yolo26m.pt">YOLO26 Medium</option>
+                <option value="yolo26l.pt">YOLO26 Large</option>
+                <option value="yolo26x.pt">YOLO26 XLarge</option>
+              </optgroup>
+              <optgroup label="YOLO11">
+                <option value="yolo11n.pt">YOLO11 Nano</option>
+                <option value="yolo11s.pt">YOLO11 Small</option>
+                <option value="yolo11m.pt">YOLO11 Medium</option>
+                <option value="yolo11l.pt">YOLO11 Large</option>
+                <option value="yolo11x.pt">YOLO11 XLarge</option>
+              </optgroup>
+              <optgroup label="YOLOv8">
+                <option value="yolov8n.pt">YOLOv8 Nano (fastest)</option>
+                <option value="yolov8s.pt">YOLOv8 Small</option>
+                <option value="yolov8m.pt" selected>YOLOv8 Medium</option>
+                <option value="yolov8l.pt">YOLOv8 Large</option>
+                <option value="yolov8x.pt">YOLOv8 XLarge (best)</option>
+              </optgroup>
             </select>
           </div>
-          <div class="train-field"><label>Run Name</label><input type="text" id="tr-name" value="vehicle_v1" /></div>
+          <div class="train-field">
+            <label>Custom .pt file <span class="text-slate-darker">(overrides above)</span></label>
+            <select id="tr-custom"></select>
+          </div>
+          <div class="train-two">
+            <div class="train-field"><label>Epochs</label><input type="number" id="tr-epochs" value="50" min="1" /></div>
+            <div class="train-field"><label>Batch Size</label><input type="number" id="tr-batch" value="16" min="1" />
+            </div>
+          </div>
+          <div class="train-two">
+            <div class="train-field"><label>Image Size</label><input type="number" id="tr-imgsz" value="640" step="32" />
+            </div>
+            <div class="train-field"><label>LR (lr0)</label><input type="number" id="tr-lr" value="0.01" step="0.001" />
+            </div>
+          </div>
+          <div class="train-two">
+            <div class="train-field"><label>Device</label>
+              <select id="tr-device">
+                <option value="0">GPU 0 (CUDA)</option>
+                <option value="1">GPU 1 (CUDA)</option>
+                <option value="mps">MPS (Apple)</option>
+                <option value="cpu">CPU</option>
+              </select>
+            </div>
+            <div class="train-field"><label>Run Name</label><input type="text" id="tr-name" value="vehicle_v1" /></div>
+          </div>
+          <div id="train-log"></div>
+          <div class="d-flex gap-5">
+            <button class="btn btn-primary flex-1 justify-center" id="btn-train"><i
+                class="fa-solid fa-play"></i> Start
+              Training</button>
+            <button class="btn btn-danger" id="btn-stop-train"><i class="fa-solid fa-stop"></i> Stop</button>
+          </div>
+          <div id="train-status" class="fs-11 text-slate-dark text-center mt-5"></div>
         </div>
-        <div id="train-log"></div>
-        <div class="d-flex gap-5">
-          <button class="btn btn-primary flex-1 justify-center" id="btn-train"><i
-              class="fa-solid fa-play"></i> Start
-            Training</button>
-          <button class="btn btn-danger" id="btn-stop-train"><i class="fa-solid fa-stop"></i> Stop</button>
+
+        <!-- SUB-PANEL 2: DATASET RESIZER (CPU MULTI-THREADED) -->
+        <div class="tsubpanel d-none" id="tsub-panel-resize">
+          <div class="fs-12 text-slate-light mb-10 lh-14">
+            <i class="fa-solid fa-circle-info text-blue mr-4"></i>
+            Resizes all images and scales bounding box / polygon coordinates automatically. Runs on multi-threaded CPU on all devices.
+          </div>
+          <div class="train-field">
+            <label>Target Resolution</label>
+            <select id="tool-resize-size" class="field-select glass-input">
+              <option value="640" selected>640 × 640 (Standard YOLO)</option>
+              <option value="1280">1280 × 1280 (High Resolution)</option>
+              <option value="416">416 × 416 (Fast Mobile)</option>
+              <option value="320">320 × 320 (Ultra Lightweight)</option>
+            </select>
+          </div>
+          <div class="train-field">
+            <label>Resize Algorithm</label>
+            <select id="tool-resize-mode" class="field-select glass-input">
+              <option value="letterbox" selected>Letterbox (YOLO 114 Gray Padding)</option>
+              <option value="stretch">Direct Stretch</option>
+              <option value="max_edge">Keep Aspect Ratio (Max Edge)</option>
+            </select>
+          </div>
+          <div class="train-two">
+            <div class="train-field">
+              <label>JPEG Quality</label>
+              <input type="number" id="tool-resize-quality" value="95" min="50" max="100" />
+            </div>
+            <div class="train-field">
+              <label>Worker Threads</label>
+              <input type="number" id="tool-resize-workers" value="8" min="1" max="32" />
+            </div>
+          </div>
+          
+          <button class="btn btn-primary btn-full mt-10" id="btn-tool-resize">
+            <i class="fa-solid fa-expand"></i> Resize Dataset
+          </button>
+
+          <!-- Live Progress Bar -->
+          <div class="prog-wrap glass-prog mt-12 d-none" id="resize-prog-wrap">
+            <div class="prog-header">
+              <span id="resize-prog-label">Resizing images…</span>
+              <span id="resize-prog-num">0%</span>
+            </div>
+            <div class="prog-track"><div class="prog-bar" id="resize-prog-bar"></div></div>
+            <div class="prog-status" id="resize-prog-status">Initializing...</div>
+          </div>
         </div>
-        <div id="train-status" class="fs-11 text-slate-dark text-center mt-5"></div>
+
+        <!-- SUB-PANEL 3: DATASET COMPRESSOR (CPU MULTI-THREADED) -->
+        <div class="tsubpanel d-none" id="tsub-panel-compress">
+          <div class="fs-12 text-slate-light mb-10 lh-14">
+            <i class="fa-solid fa-circle-info text-blue mr-4"></i>
+            Parallel multi-threaded archiving with temp file cleaning. Downloads immediately upon completion.
+          </div>
+          <div class="train-field">
+            <label>Archive Format</label>
+            <select id="tool-compress-format" class="field-select glass-input">
+              <option value="zip" selected>.ZIP (Fast & Compatible)</option>
+              <option value="7z">.7Z (High Compression LZMA)</option>
+              <option value="tar.gz">.TAR.GZ (Linux / Cloud)</option>
+              <option value="tar.xz">.TAR.XZ (Ultra Compression)</option>
+            </select>
+          </div>
+          <div class="train-field">
+            <label>Compression Level</label>
+            <select id="tool-compress-method" class="field-select glass-input">
+              <option value="deflated" selected>Standard (Balanced)</option>
+              <option value="lzma">LZMA (Maximum Space Saved)</option>
+              <option value="stored">Stored (No Compression - Fast Copy)</option>
+            </select>
+          </div>
+          <div class="d-flex align-center gap-8 mb-12">
+            <input type="checkbox" id="tool-compress-verify" checked />
+            <label for="tool-compress-verify" class="fs-12 text-slate-light cursor-pointer">Verify archive integrity (Checksum)</label>
+          </div>
+
+          <button class="btn btn-primary btn-full mt-4" id="btn-tool-compress">
+            <i class="fa-solid fa-file-zipper"></i> Compress & Package
+          </button>
+
+          <!-- Live Progress Bar -->
+          <div class="prog-wrap glass-prog mt-12 d-none" id="compress-prog-wrap">
+            <div class="prog-header">
+              <span id="compress-prog-label">Compressing dataset…</span>
+              <span id="compress-prog-num">0%</span>
+            </div>
+            <div class="prog-track"><div class="prog-bar" id="compress-prog-bar"></div></div>
+            <div class="prog-status" id="compress-prog-status">Initializing...</div>
+            <div id="compress-download-btn-wrap" class="mt-8 d-none">
+              <a href="#" class="btn btn-success btn-full text-center text-white" id="compress-download-link">
+                <i class="fa-solid fa-download"></i> Download Archive
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

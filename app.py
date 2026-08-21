@@ -1370,6 +1370,155 @@ def api_models():
     return jsonify({"files": all_models, "presets": presets})
 
 
+# ─── API: DATASET TOOLS (RESIZER & COMPRESSOR) ───────────────────────────────
+_tool_jobs = {}
+_tool_job_lock = threading.Lock()
+
+def _set_tool_job(job_name, **kwargs):
+    with _tool_job_lock:
+        if job_name not in _tool_jobs:
+            _tool_jobs[job_name] = {}
+        _tool_jobs[job_name].update(kwargs)
+
+def _get_tool_job(job_name):
+    with _tool_job_lock:
+        return dict(_tool_jobs.get(job_name, {"running": False, "percent": 0, "status": "Idle"}))
+
+
+@app.route("/api/tools/resize", methods=["POST"])
+def api_tools_resize():
+    data = request.get_json() or {}
+    target_size = int(data.get("size", 640))
+    mode = data.get("mode", "letterbox")
+    quality = int(data.get("quality", 95))
+    workers = int(data.get("workers", 8))
+    
+    with _tool_job_lock:
+        current_job = _tool_jobs.get("resize", {})
+        if current_job.get("running"):
+            return jsonify({"error": "A dataset resizing job is already running."}), 400
+        _tool_jobs["resize"] = {
+            "running": True,
+            "percent": 0,
+            "current": 0,
+            "total": 0,
+            "status": "Initializing...",
+            "error": None,
+            "out_dir": f"{OUTPUT_DIR}_{target_size}"
+        }
+        
+    def run_resize():
+        try:
+            sys.path.append(os.path.join(APP_DIR, "scripts"))
+            from resize_dataset import resize_dataset
+            
+            def on_progress(cur, tot, msg):
+                pct = int((cur / max(1, tot)) * 100) if tot > 0 else 0
+                _set_tool_job("resize", current=cur, total=tot, percent=pct, status=msg)
+                
+            out_dir = f"{OUTPUT_DIR}_{target_size}"
+            success = resize_dataset(
+                input_dir=OUTPUT_DIR,
+                output_dir=out_dir,
+                target_w=target_size,
+                target_h=target_size,
+                mode=mode,
+                quality=quality,
+                workers=workers,
+                progress_callback=on_progress
+            )
+            if success:
+                _set_tool_job("resize", running=False, percent=100, status=f"Completed! Saved to {os.path.basename(out_dir)}")
+            else:
+                _set_tool_job("resize", running=False, error="Resizing failed", status="Failed")
+        except Exception as e:
+            _set_tool_job("resize", running=False, error=str(e), status=f"Error: {e}")
+
+    threading.Thread(target=run_resize, daemon=True).start()
+    return jsonify({"status": "started", "job": "resize"})
+
+
+@app.route("/api/tools/compress", methods=["POST"])
+def api_tools_compress():
+    data = request.get_json() or {}
+    fmt = data.get("format", "zip")
+    method = data.get("method", "deflated")
+    level = int(data.get("level", 6))
+    verify = bool(data.get("verify", True))
+    
+    with _tool_job_lock:
+        current_job = _tool_jobs.get("compress", {})
+        if current_job.get("running"):
+            return jsonify({"error": "A dataset compression job is already running."}), 400
+        _tool_jobs["compress"] = {
+            "running": True,
+            "percent": 0,
+            "current": 0,
+            "total": 0,
+            "status": "Initializing...",
+            "error": None,
+            "download_url": None,
+            "filename": None
+        }
+        
+    def run_compress():
+        try:
+            sys.path.append(os.path.join(APP_DIR, "scripts"))
+            from compress_dataset import compress_dataset
+            
+            ext_map = {"zip": ".zip", "tar.gz": ".tar.gz", "tar.xz": ".tar.xz", "7z": ".7z"}
+            ext = ext_map.get(fmt.lower(), f".{fmt}")
+            filename = f"{_current_dataset_name}_package{ext}"
+            out_path = os.path.join(os.path.dirname(OUTPUT_DIR), filename)
+            
+            def on_progress(cur, tot, msg):
+                pct = int((cur / max(1, tot)) * 100) if tot > 0 else 0
+                _set_tool_job("compress", current=cur, total=tot, percent=pct, status=msg)
+                
+            success = compress_dataset(
+                input_dir=OUTPUT_DIR,
+                output_file=out_path,
+                fmt=fmt,
+                method=method,
+                level=level,
+                verify=verify,
+                progress_callback=on_progress
+            )
+            if success:
+                _set_tool_job(
+                    "compress",
+                    running=False,
+                    percent=100,
+                    status="Archive created successfully!",
+                    filename=filename,
+                    download_url=f"/api/tools/download?file={filename}"
+                )
+            else:
+                _set_tool_job("compress", running=False, error="Compression failed", status="Failed")
+        except Exception as e:
+            _set_tool_job("compress", running=False, error=str(e), status=f"Error: {e}")
+
+    threading.Thread(target=run_compress, daemon=True).start()
+    return jsonify({"status": "started", "job": "compress"})
+
+
+@app.route("/api/tools/status")
+def api_tools_status():
+    job_name = request.args.get("job", "resize")
+    return jsonify(_get_tool_job(job_name))
+
+
+@app.route("/api/tools/download")
+def api_tools_download():
+    filename = request.args.get("file", "")
+    if not filename or ".." in filename or "/" in filename or "\\" in filename:
+        return jsonify({"error": "Invalid filename"}), 400
+    file_path = os.path.join(os.path.dirname(OUTPUT_DIR), filename)
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+    return send_file(file_path, as_attachment=True, download_name=filename)
+
+
 # ─── API: EXPORT DATASET ─────────────────────────────────────────────────────
 @app.route("/api/export")
 def api_export():

@@ -203,17 +203,19 @@ def process_single_image(img_path, lbl_path, out_img_path, out_lbl_path, target_
         return False
 
 
-def resize_dataset(input_dir, output_dir, target_w, target_h, mode="letterbox", quality=95, workers=8):
+def resize_dataset(input_dir, output_dir, target_w, target_h, mode="letterbox", quality=95, workers=8, progress_callback=None):
     """Resize an entire YOLO dataset directory structure to target dimensions."""
     input_path = Path(input_dir).resolve()
     output_path = Path(output_dir).resolve()
     
     if not input_path.exists():
-        print(f"❌ Error: Input dataset directory '{input_path}' does not exist.")
+        print(f"[*] Error: Input dataset directory '{input_path}' does not exist.")
+        if progress_callback:
+            progress_callback(0, 0, f"Error: Input dataset '{input_path}' does not exist.")
         return False
         
     print("=" * 64)
-    print(f"🚀 YOLO Dataset Resizer")
+    print(f"[*] YOLO Dataset Resizer")
     print(f"   Input Directory : {input_path}")
     print(f"   Output Directory: {output_path}")
     print(f"   Target Size     : {target_w}x{target_h}")
@@ -238,7 +240,9 @@ def resize_dataset(input_dir, output_dir, target_w, target_h, mode="letterbox", 
             detected_splits = ["."]
             
     if not detected_splits:
-        print(f"⚠️ No image folders (train, valid, test) found in '{input_path}'.")
+        print(f"[!] No image folders (train, valid, test) found in '{input_path}'.")
+        if progress_callback:
+            progress_callback(0, 0, f"No image folders found in {input_path}")
         return False
         
     total_images = 0
@@ -274,7 +278,9 @@ def resize_dataset(input_dir, output_dir, target_w, target_h, mode="letterbox", 
                     target_w, target_h, mode, quality
                 ))
 
-    print(f"📦 Found {total_images} images across {len(detected_splits)} split(s). Starting conversion...")
+    print(f"[*] Found {total_images} images across {len(detected_splits)} split(s). Starting conversion...")
+    if progress_callback:
+        progress_callback(0, total_images, f"Starting conversion of {total_images} images...")
     
     completed = 0
     with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -282,11 +288,13 @@ def resize_dataset(input_dir, output_dir, target_w, target_h, mode="letterbox", 
         for future in as_completed(futures):
             if future.result():
                 completed += 1
+            if progress_callback and (completed % 5 == 0 or completed == total_images):
+                progress_callback(completed, total_images, f"Resizing: {completed}/{total_images}")
             if completed % 50 == 0 or completed == total_images:
                 pct = (completed / max(1, total_images)) * 100
                 print(f"   [{pct:5.1f}%] Processed {completed}/{total_images} images...", end="\r", flush=True)
 
-    print(f"\n✅ Completed: {completed}/{total_images} images resized successfully.")
+    print(f"\n[OK] Completed: {completed}/{total_images} images resized successfully.")
 
     # Copy data.yaml if present and adjust paths
     yaml_src = input_path / "data.yaml"

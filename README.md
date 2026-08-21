@@ -173,6 +173,20 @@ python scripts/resize_dataset.py --input ./dataset_default --sizes 640 1280 416
 python scripts/resize_dataset.py --input ./dataset_default --width 640 --height 640 --mode stretch
 ```
 
+### High-Speed Multi-Threaded Dataset Compression (.zip, .7z, .tar.gz)
+Quickly archive large datasets using parallel worker threads with automatic filtering and integrity verification:
+
+```bash
+# Multi-threaded ZIP compression with integrity check
+python scripts/compress_dataset.py --input ./dataset_default --output ./dataset.zip --verify
+
+# High-compression LZMA or 7Z
+python scripts/compress_dataset.py --input ./dataset_default --format 7z --threads 8
+
+# TAR.GZ format
+python scripts/compress_dataset.py --input ./dataset_default --format tar.gz
+```
+
 ### Dataset Frame Cleanup
 Remove specific corrupted frame ranges from database and disk:
 

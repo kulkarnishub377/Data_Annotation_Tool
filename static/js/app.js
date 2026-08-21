@@ -1951,4 +1951,159 @@ document.getElementById("btn-health-close")?.addEventListener("click", () => {
     document.getElementById("health-modal").style.display = "none";
 });
 
+// ─── TRAINING PANEL SUBTABS ──────────────────────────────────────────────────
+document.querySelectorAll(".tsubtab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll(".tsubtab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".tsubpanel").forEach(p => p.classList.add("d-none"));
+        tab.classList.add("active");
+        const sub = tab.dataset.tsub;
+        const panel = document.getElementById(`tsub-panel-${sub}`);
+        if (panel) {
+            panel.classList.remove("d-none");
+        }
+    });
+});
+
+// ─── DATASET RESIZE TOOL ─────────────────────────────────────────────────────
+let _resizePollInterval = null;
+document.getElementById("btn-tool-resize")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btn-tool-resize");
+    const progWrap = document.getElementById("resize-prog-wrap");
+    const progBar = document.getElementById("resize-prog-bar");
+    const progNum = document.getElementById("resize-prog-num");
+    const progStatus = document.getElementById("resize-prog-status");
+    
+    const size = parseInt(document.getElementById("tool-resize-size").value) || 640;
+    const mode = document.getElementById("tool-resize-mode").value;
+    const quality = parseInt(document.getElementById("tool-resize-quality").value) || 95;
+    const workers = parseInt(document.getElementById("tool-resize-workers").value) || 8;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resizing...';
+    progWrap.classList.remove("d-none");
+    progBar.style.width = "0%";
+    progNum.textContent = "0%";
+    progStatus.textContent = "Starting background resizing...";
+    
+    try {
+        const res = await fetch("/api/tools/resize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ size, mode, quality, workers })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.error || "Failed to start resizing job");
+        }
+        
+        if (_resizePollInterval) clearInterval(_resizePollInterval);
+        _resizePollInterval = setInterval(async () => {
+            try {
+                const sRes = await fetch("/api/tools/status?job=resize");
+                const sData = await sRes.json();
+                
+                progBar.style.width = `${sData.percent || 0}%`;
+                progNum.textContent = `${sData.percent || 0}%`;
+                progStatus.textContent = sData.status || "Processing...";
+                
+                if (!sData.running) {
+                    clearInterval(_resizePollInterval);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-expand"></i> Resize Dataset';
+                    if (sData.error) {
+                        progStatus.textContent = `❌ ${sData.error}`;
+                        if (typeof showToast === "function") showToast(`❌ Resize failed: ${sData.error}`, "err");
+                    } else {
+                        progStatus.textContent = `✅ ${sData.status}`;
+                        if (typeof showToast === "function") showToast(`✅ Dataset resized successfully!`, "ok");
+                    }
+                }
+            } catch (pErr) {
+                console.error("Resize poll error", pErr);
+            }
+        }, 1000);
+        
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-expand"></i> Resize Dataset';
+        progStatus.textContent = `❌ ${err.message}`;
+        if (typeof showToast === "function") showToast(`❌ ${err.message}`, "err");
+    }
+});
+
+// ─── DATASET COMPRESS TOOL ───────────────────────────────────────────────────
+let _compressPollInterval = null;
+document.getElementById("btn-tool-compress")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btn-tool-compress");
+    const progWrap = document.getElementById("compress-prog-wrap");
+    const progBar = document.getElementById("compress-prog-bar");
+    const progNum = document.getElementById("compress-prog-num");
+    const progStatus = document.getElementById("compress-prog-status");
+    const dlWrap = document.getElementById("compress-download-btn-wrap");
+    const dlLink = document.getElementById("compress-download-link");
+    
+    const format = document.getElementById("tool-compress-format").value;
+    const method = document.getElementById("tool-compress-method").value;
+    const verify = document.getElementById("tool-compress-verify").checked;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Compressing...';
+    progWrap.classList.remove("d-none");
+    dlWrap.classList.add("d-none");
+    progBar.style.width = "0%";
+    progNum.textContent = "0%";
+    progStatus.textContent = "Starting multi-threaded compression...";
+    
+    try {
+        const res = await fetch("/api/tools/compress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ format, method, verify })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.error || "Failed to start compression job");
+        }
+        
+        if (_compressPollInterval) clearInterval(_compressPollInterval);
+        _compressPollInterval = setInterval(async () => {
+            try {
+                const sRes = await fetch("/api/tools/status?job=compress");
+                const sData = await sRes.json();
+                
+                progBar.style.width = `${sData.percent || 0}%`;
+                progNum.textContent = `${sData.percent || 0}%`;
+                progStatus.textContent = sData.status || "Archiving files...";
+                
+                if (!sData.running) {
+                    clearInterval(_compressPollInterval);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Compress & Package';
+                    if (sData.error) {
+                        progStatus.textContent = `❌ ${sData.error}`;
+                        if (typeof showToast === "function") showToast(`❌ Compression failed: ${sData.error}`, "err");
+                    } else {
+                        progStatus.textContent = `✅ ${sData.status}`;
+                        if (typeof showToast === "function") showToast(`✅ Dataset compressed successfully!`, "ok");
+                        if (sData.download_url) {
+                            dlWrap.classList.remove("d-none");
+                            dlLink.href = sData.download_url;
+                            window.location.href = sData.download_url;
+                        }
+                    }
+                }
+            } catch (pErr) {
+                console.error("Compress poll error", pErr);
+            }
+        }, 1000);
+        
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Compress & Package';
+        progStatus.textContent = `❌ ${err.message}`;
+        if (typeof showToast === "function") showToast(`❌ ${err.message}`, "err");
+    }
+});
+
 
