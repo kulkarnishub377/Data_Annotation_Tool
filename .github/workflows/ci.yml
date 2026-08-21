@@ -30,5 +30,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run unit tests
+      env:
+        PYTHONPATH: .
       run: |
         python -m unittest discover tests

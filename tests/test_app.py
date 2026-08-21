@@ -117,5 +117,23 @@ class TestApp(unittest.TestCase):
         self.assertAlmostEqual(float(parts[1]), 0.5, places=3) # Centered horizontally
         self.assertAlmostEqual(float(parts[2]), 0.5, places=3) # Centered vertically
 
+    def test_compress_dataset(self):
+        """Test multi-threaded dataset zip creation and verification."""
+        import tempfile
+        sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+        from compress_dataset import compress_dataset, verify_zip_archive
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src_dir = os.path.join(tmpdir, "test_dataset")
+            os.makedirs(os.path.join(src_dir, "train", "images"), exist_ok=True)
+            with open(os.path.join(src_dir, "train", "images", "sample.txt"), "w") as f:
+                f.write("test content")
+                
+            out_zip = os.path.join(tmpdir, "output.zip")
+            success = compress_dataset(src_dir, out_zip, fmt="zip", threads=2, verify=True)
+            self.assertTrue(success)
+            self.assertTrue(os.path.exists(out_zip))
+            self.assertTrue(verify_zip_archive(out_zip))
+
 if __name__ == '__main__':
     unittest.main()
