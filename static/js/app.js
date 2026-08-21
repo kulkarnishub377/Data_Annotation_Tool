@@ -133,6 +133,7 @@ let _lastScrollTop = -1;
 // _loadId for stale request guard
 let _loadId = 0;
 let _imgReady = false, _labelsReady = false;
+let _hasActiveDatasetSession = false;
 
 // ─── SETUP SCREEN ────────────────────────────────────────────────────────────
 async function initSetup() {
@@ -141,6 +142,18 @@ async function initSetup() {
         datasetType = st.dataset_type || "bbox";
         if (st.dataset_dir) {
             checkDatasetInfo(st.dataset_dir);
+        }
+    }
+
+    // Only show bottom floating banner if user came from an active dataset session
+    const extBanner = document.getElementById("existing-banner");
+    if (extBanner) {
+        if (_hasActiveDatasetSession) {
+            extBanner.classList.remove("d-none");
+            extBanner.style.display = "flex";
+        } else {
+            extBanner.classList.add("d-none");
+            extBanner.style.display = "none";
         }
     }
 
@@ -445,6 +458,11 @@ if (btnGotoSetup) {
     });
 }
 
+const btnOpen = document.getElementById("btn-open");
+if (btnOpen) {
+    btnOpen.addEventListener("click", openAnnotator);
+}
+
 // Help & Shortcuts Modal Handler
 const btnHelpSetup = document.getElementById("btn-help-setup");
 const helpModal = document.getElementById("help-modal");
@@ -578,6 +596,7 @@ async function openAnnotator() {
             appEl.style.display = "grid";
         }
         buildClassDropdowns();
+        _hasActiveDatasetSession = true;
         _sessionStart = Date.now();
         // Restore last active split (default to train)
         const lastSplit = localStorage.getItem("lastSplit") || "train";

@@ -4,6 +4,27 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+        scrollbar-width: thin;
+        scrollbar-color: #1e293b #090d16;
+    }
+
+    /* ── CUSTOM SCROLLBAR ── */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #090d16;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #1e293b;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #06b6d4;
     }
 
     html,
@@ -70,12 +91,14 @@
         margin-bottom: 6px;
     }
 
+    select,
     .field-select,
     .field-input,
     .glass-input {
         width: 100%;
-        padding: 10px 14px;
-        background: #0d121f;
+        height: 38px;
+        padding: 8px 12px;
+        background-color: #0d121f;
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 8px;
         color: #f1f5f9;
@@ -85,49 +108,67 @@
         transition: all 0.2s ease;
         appearance: none;
         -webkit-appearance: none;
+        color-scheme: dark !important;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
         background-position: right 12px center;
         background-size: 14px;
         padding-right: 36px;
+        cursor: pointer;
     }
 
     input.glass-input,
     input.field-input {
         background-image: none !important;
-        padding-right: 14px !important;
+        padding-right: 12px !important;
+        cursor: text;
     }
 
+    select:hover,
     .field-select:hover,
-    .field-input:hover,
-    .glass-input:hover {
-        border-color: rgba(6, 182, 212, 0.4);
-        background-color: #111728;
+    input.field-input:hover,
+    input.glass-input:hover {
+        border-color: rgba(6, 182, 212, 0.45);
+        background-color: #121828;
     }
 
+    select:focus,
     .field-select:focus,
-    .field-input:focus,
-    .glass-input:focus {
+    input.field-input:focus,
+    input.glass-input:focus {
         border-color: #06b6d4;
-        box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
-        background-color: #111728;
+        box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.18);
+        background-color: #121828;
     }
 
+    select optgroup,
     .field-select optgroup {
-        background: #0a0d16;
-        color: #38bdf8;
+        background: #090c14 !important;
+        color: #38bdf8 !important;
         font-weight: 700;
-        font-size: 12px;
+        font-size: 11.5px;
         letter-spacing: 0.5px;
-        padding: 8px 4px;
+        padding: 6px 4px;
     }
 
+    select option,
     .field-select option {
-        background: #0f1422;
-        color: #e2e8f0;
+        background: #0d121f !important;
+        color: #e2e8f0 !important;
         font-weight: 500;
         font-size: 13px;
         padding: 8px 10px;
+    }
+
+    select option:hover,
+    select option:focus,
+    select option:checked,
+    .field-select option:hover,
+    .field-select option:focus,
+    .field-select option:checked {
+        background: #0284c7 !important;
+        background-color: #0284c7 !important;
+        color: #ffffff !important;
     }
 
     .badge {
@@ -2201,4 +2242,34 @@
 
     .divider-text-compact span {
         padding: 0 10px;
+    }
+
+    .glass-banner-fixed {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(13, 18, 30, 0.95);
+        border: 1px solid rgba(6, 182, 212, 0.55);
+        padding: 8px 20px;
+        border-radius: 40px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(6, 182, 212, 0.25);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        z-index: 120;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        animation: bannerPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes bannerPop {
+        from {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
     }
