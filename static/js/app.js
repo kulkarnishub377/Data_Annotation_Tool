@@ -169,27 +169,9 @@ async function initSetup() {
         mpre.innerHTML = '<option value="">— select pre-trained model to auto-download —</option>';
         
         const categories = {
-            "⚡ YOLO26 (Next-Gen Vision)": [
-                { val: "yolo26n.pt", name: "YOLO26 Nano (Ultra-Fast, Light)" },
-                { val: "yolo26s.pt", name: "YOLO26 Small (Balanced Speed & Acc)" },
-                { val: "yolo26m.pt", name: "YOLO26 Medium (Recommended)" },
-                { val: "yolo26l.pt", name: "YOLO26 Large (High Accuracy)" },
-                { val: "yolo26x.pt", name: "YOLO26 XLarge (Maximum Precision)" },
-            ],
-            "🚀 YOLO11 (Latest Generation)": [
-                { val: "yolo11n.pt", name: "YOLO11 Nano" },
-                { val: "yolo11s.pt", name: "YOLO11 Small" },
-                { val: "yolo11m.pt", name: "YOLO11 Medium" },
-                { val: "yolo11l.pt", name: "YOLO11 Large" },
-                { val: "yolo11x.pt", name: "YOLO11 XLarge" },
-            ],
-            "📦 YOLOv8 (Standard Benchmark)": [
-                { val: "yolov8n.pt", name: "YOLOv8 Nano" },
-                { val: "yolov8s.pt", name: "YOLOv8 Small" },
-                { val: "yolov8m.pt", name: "YOLOv8 Medium" },
-                { val: "yolov8l.pt", name: "YOLOv8 Large" },
-                { val: "yolov8x.pt", name: "YOLOv8 XLarge" },
-            ]
+            "YOLO26 Models (Next-Gen)": ["yolo26n.pt", "yolo26s.pt", "yolo26m.pt", "yolo26l.pt", "yolo26x.pt"],
+            "YOLO11 Models (Latest)": ["yolo11n.pt", "yolo11s.pt", "yolo11m.pt", "yolo11l.pt", "yolo11x.pt"],
+            "YOLOv8 Models (Standard)": ["yolov8n.pt", "yolov8s.pt", "yolov8m.pt", "yolov8l.pt", "yolov8x.pt"]
         };
 
         Object.entries(categories).forEach(([label, models]) => {
@@ -197,8 +179,8 @@ async function initSetup() {
             grp.label = label;
             models.forEach(m => {
                 const o = document.createElement('option');
-                o.value = m.val;
-                o.textContent = `${m.val}  —  ${m.name}`;
+                o.value = m;
+                o.textContent = m;
                 grp.appendChild(o);
             });
             mpre.appendChild(grp);
@@ -460,6 +442,51 @@ if (btnGotoSetup) {
             setupScreen.style.display = "flex";
         }
         initSetup();
+    });
+}
+
+// Help & Shortcuts Modal Handler
+const btnHelpSetup = document.getElementById("btn-help-setup");
+const helpModal = document.getElementById("help-modal");
+const helpClose = document.getElementById("help-close");
+
+if (btnHelpSetup && helpModal) {
+    btnHelpSetup.addEventListener("click", () => {
+        helpModal.classList.remove("d-none");
+        helpModal.classList.remove("hidden");
+        helpModal.style.display = "flex";
+    });
+}
+if (helpClose && helpModal) {
+    helpClose.addEventListener("click", () => {
+        helpModal.classList.add("d-none");
+        helpModal.classList.add("hidden");
+        helpModal.style.display = "none";
+    });
+}
+if (helpModal) {
+    helpModal.addEventListener("click", (e) => {
+        if (e.target === helpModal) {
+            helpModal.classList.add("d-none");
+            helpModal.classList.add("hidden");
+            helpModal.style.display = "none";
+        }
+    });
+}
+
+// Health Modal Close Handler
+const btnHealthClose = document.getElementById("btn-health-close");
+const healthModal = document.getElementById("health-modal");
+if (btnHealthClose && healthModal) {
+    btnHealthClose.addEventListener("click", () => {
+        healthModal.style.display = "none";
+    });
+}
+if (healthModal) {
+    healthModal.addEventListener("click", (e) => {
+        if (e.target === healthModal) {
+            healthModal.style.display = "none";
+        }
     });
 }
 
