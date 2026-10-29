@@ -261,6 +261,43 @@ async function initSetup() {
         });
     }
 
+    // Setup Browse Button for Custom Model Files
+    const btnBrowseModel = document.getElementById("btn-browse-model");
+    if (btnBrowseModel) {
+        btnBrowseModel.addEventListener("click", async () => {
+            try {
+                const res = await fetch("/api/browse_model_file").then(r => r.json()).catch(() => ({}));
+                if (res && res.path) {
+                    const msel = document.getElementById("model-select");
+                    const mpre = document.getElementById("model-preset");
+                    if (mpre) mpre.value = "";
+                    
+                    let exists = false;
+                    for (let i = 0; i < msel.options.length; i++) {
+                        if (msel.options[i].value === res.path || msel.options[i].value === res.path.replace(/\\/g, '/')) {
+                            msel.selectedIndex = i;
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        const opt = document.createElement("option");
+                        opt.value = res.path;
+                        const fname = res.path.split(/[\\/]/).pop();
+                        opt.textContent = `${fname} (${res.path})`;
+                        msel.insertBefore(opt, msel.firstChild.nextSibling);
+                        msel.value = res.path;
+                    }
+                    if (typeof showToast === "function") {
+                        showToast(`Selected model: ${res.path.split(/[\\/]/).pop()}`, false, "ok");
+                    }
+                }
+            } catch (err) {
+                console.error("Browse model error", err);
+            }
+        });
+    }
+
     // Setup Browse Button for Existing Datasets
     const btnBrowseExisting = document.getElementById("btn-browse-existing");
     if (btnBrowseExisting) {

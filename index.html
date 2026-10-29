@@ -53,7 +53,10 @@
           <div class="divider-text-compact"><span>OR</span></div>
           
           <div class="field-label">Local Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
-          <select id="model-select" class="field-select glass-input mb-12"></select>
+          <div class="d-flex gap-8 mb-12">
+            <select id="model-select" class="field-select glass-input flex-1"></select>
+            <button class="btn btn-secondary" id="btn-browse-model" title="Browse for custom model file on disk"><i class="fa-solid fa-folder"></i> Browse</button>
+          </div>
           
           <div class="field-label">Inference Device</div>
           <select id="device-select" class="field-select glass-input">

@@ -58,19 +58,43 @@ else:
 app = Flask(__name__, template_folder=APP_DIR, static_folder=os.path.join(APP_DIR, 'static'))
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
+def _resolve_dir(path_val, default_base):
+    if not path_val:
+        return default_base
+    if os.path.isabs(path_val):
+        return os.path.abspath(path_val)
+    return os.path.abspath(os.path.join(APP_DIR, path_val))
+
 if config.has_option("Paths", "BASE_DIR"):
-    BASE_DIR = config.get("Paths", "BASE_DIR")
+    BASE_DIR = _resolve_dir(config.get("Paths", "BASE_DIR"), APP_DIR)
 elif "BASE_DIR" in os.environ:
-    BASE_DIR = os.environ.get("BASE_DIR")
+    BASE_DIR = _resolve_dir(os.environ.get("BASE_DIR"), APP_DIR)
+else:
+    # Auto-detect parent directory as workspace BASE_DIR if parent contains models/ or dataset_*
+    parent_dir = os.path.abspath(os.path.join(APP_DIR, ".."))
+    if (os.path.exists(os.path.join(parent_dir, "models")) or
+        os.path.exists(os.path.join(parent_dir, "dataset_default")) or
+        os.path.exists(os.path.join(parent_dir, "best.pt")) or
+        os.path.exists(os.path.join(parent_dir, "bestv8_p.pt"))):
+        BASE_DIR = parent_dir
+    else:
+        BASE_DIR = APP_DIR
 
 if config.has_option("Paths", "MODELS_DIR"):
-    MODELS_DIR = config.get("Paths", "MODELS_DIR")
+    MODELS_DIR = _resolve_dir(config.get("Paths", "MODELS_DIR"), os.path.join(BASE_DIR, "models"))
+elif "MODELS_DIR" in os.environ:
+    MODELS_DIR = _resolve_dir(os.environ.get("MODELS_DIR"), os.path.join(BASE_DIR, "models"))
 else:
-    MODELS_DIR = os.environ.get("MODELS_DIR", os.path.join(BASE_DIR, "models"))
+    if os.path.exists(os.path.join(BASE_DIR, "models")):
+        MODELS_DIR = os.path.join(BASE_DIR, "models")
+    elif os.path.exists(os.path.join(APP_DIR, "models")):
+        MODELS_DIR = os.path.join(APP_DIR, "models")
+    else:
+        MODELS_DIR = os.path.join(BASE_DIR, "models")
 
 _current_dataset_name = "default"
 if config.has_option("Paths", "OUTPUT_DIR"):
-    OUTPUT_DIR = config.get("Paths", "OUTPUT_DIR")
+    OUTPUT_DIR = _resolve_dir(config.get("Paths", "OUTPUT_DIR"), os.path.join(BASE_DIR, f"dataset_{_current_dataset_name}"))
 else:
     OUTPUT_DIR = os.environ.get("OUTPUT_DIR", os.path.join(BASE_DIR, f"dataset_{_current_dataset_name}"))
 
@@ -382,25 +406,36 @@ def get_img_lock(key):
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
 def get_image_dirs():
-    skip = {'templates', '.vscode', 'annotated_dataset', 'vedio', '__pycache__', 'Data_annotrator_tool', 'runs'}
+    skip = {'templates', '.vscode', 'annotated_dataset', 'vedio', '__pycache__', 'Data_annotrator_tool', 'runs', 'venv', '.venv', '.git', '.github', 'dist', 'build', 'node_modules', 'models', 'ocr_models', 'static', 'scripts', 'tests'}
     result = []
-    try:
-        with os.scandir(BASE_DIR) as it:
-            for entry in it:
-                if entry.name in skip or entry.name.startswith('.'):
-                    continue
-                if entry.is_dir():
-                    count = 0
-                    try:
-                        with os.scandir(entry.path) as sub_it:
-                            count = sum(1 for sub in sub_it if sub.is_file() and Path(sub.name).suffix.lower() in IMG_EXTS)
-                    except Exception:
-                        pass
-                    if count > 0:
-                        result.append({"name": entry.name, "path": entry.path, "count": count})
-    except Exception:
-        pass
-    result.sort(key=lambda x: x['name'])
+    scanned_paths = set()
+
+    def _scan_base(b_dir):
+        if not b_dir or not os.path.exists(b_dir):
+            return
+        try:
+            with os.scandir(b_dir) as it:
+                for entry in it:
+                    if entry.name in skip or entry.name.startswith('.'):
+                        continue
+                    if entry.is_dir() and entry.path not in scanned_paths:
+                        scanned_paths.add(entry.path)
+                        count = 0
+                        try:
+                            with os.scandir(entry.path) as sub_it:
+                                count = sum(1 for sub in sub_it if sub.is_file() and Path(sub.name).suffix.lower() in IMG_EXTS)
+                        except Exception:
+                            pass
+                        if count > 0:
+                            result.append({"name": entry.name, "path": entry.path, "count": count})
+        except Exception:
+            pass
+
+    _scan_base(BASE_DIR)
+    if os.path.abspath(BASE_DIR) != os.path.abspath(APP_DIR):
+        _scan_base(APP_DIR)
+
+    result.sort(key=lambda x: x['name'].lower())
     return result
 
 
@@ -532,14 +567,20 @@ def api_source_info():
 @app.route("/api/datasets")
 def api_datasets():
     datasets = []
-    try:
-        for d in os.listdir(BASE_DIR):
-            full_path = os.path.join(BASE_DIR, d)
-            if os.path.isdir(full_path) and os.path.exists(os.path.join(full_path, "state.db")):
-                datasets.append({"name": d, "path": full_path})
-        return jsonify(datasets)
-    except Exception as e:
-        return jsonify([])
+    seen = set()
+    for search_dir in [BASE_DIR, APP_DIR]:
+        if not search_dir or not os.path.exists(search_dir):
+            continue
+        try:
+            for d in os.listdir(search_dir):
+                full_path = os.path.abspath(os.path.join(search_dir, d))
+                if full_path not in seen and os.path.isdir(full_path) and os.path.exists(os.path.join(full_path, "state.db")):
+                    seen.add(full_path)
+                    datasets.append({"name": d, "path": full_path})
+        except Exception:
+            pass
+    datasets.sort(key=lambda x: x["name"].lower())
+    return jsonify(datasets)
 
 def write_yaml():
     with open(os.path.join(OUTPUT_DIR, "data.yaml"), "w") as f:
@@ -616,12 +657,19 @@ def api_set_model():
         return jsonify({"error": "device must be a string"}), 400
 
     if new_path and not os.path.exists(new_path):
-        candidate_models = os.path.join(MODELS_DIR, new_path)
-        candidate_base = os.path.join(BASE_DIR, new_path)
-        if os.path.exists(candidate_models):
-            new_path = candidate_models
-        elif os.path.exists(candidate_base):
-            new_path = candidate_base
+        candidates = [
+            os.path.join(MODELS_DIR, new_path),
+            os.path.join(BASE_DIR, new_path),
+            os.path.join(BASE_DIR, "models", new_path),
+            os.path.join(APP_DIR, new_path),
+            os.path.join(APP_DIR, "models", new_path),
+            os.path.join(os.path.dirname(APP_DIR), new_path),
+            os.path.join(os.path.dirname(APP_DIR), "models", new_path),
+        ]
+        for cand in candidates:
+            if os.path.exists(cand):
+                new_path = cand
+                break
         # If it doesn't exist locally, we leave it as new_path to allow Ultralytics to auto-download it from the internet.
 
     ext = Path(new_path).suffix.lower() if new_path else ""
@@ -684,6 +732,32 @@ def api_class_stats():
 
 
 # ─── API: SOURCE DISCOVERY ───────────────────────────────────────────────────
+@app.route("/api/browse_model_file")
+def api_browse_model_file():
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        init_dir = MODELS_DIR if os.path.exists(MODELS_DIR) else BASE_DIR
+        file_path = filedialog.askopenfilename(
+            parent=root,
+            title="Select Custom Model File",
+            initialdir=init_dir,
+            filetypes=[
+                ("All Supported Models (*.pt;*.onnx;*.engine;*.tflite;*.torchscript)", "*.pt;*.onnx;*.engine;*.tflite;*.torchscript"),
+                ("PyTorch Weights (*.pt)", "*.pt"),
+                ("ONNX Model (*.onnx)", "*.onnx"),
+                ("TensorRT Engine (*.engine)", "*.engine"),
+                ("All Files (*.*)", "*.*")
+            ]
+        )
+        root.destroy()
+        return jsonify({"path": file_path or ""})
+    except Exception as e:
+        return jsonify({"path": "", "error": str(e)})
+
 @app.route("/api/browse_folder")
 def api_browse_folder():
     try:
@@ -692,7 +766,7 @@ def api_browse_folder():
         root = tk.Tk()
         root.withdraw()
         root.attributes('-topmost', True)
-        folder = filedialog.askdirectory(parent=root, title="Select Directory")
+        folder = filedialog.askdirectory(parent=root, title="Select Directory", initialdir=BASE_DIR if os.path.exists(BASE_DIR) else None)
         root.destroy()
         return jsonify({"path": folder or ""})
     except Exception as e:
@@ -707,12 +781,21 @@ def api_source_dirs():
 @app.route("/api/existing_datasets")
 def api_existing_datasets():
     result = []
-    for name in sorted(os.listdir(BASE_DIR)):
-        if name.startswith('.'):
+    seen = set()
+    for search_dir in [BASE_DIR, APP_DIR]:
+        if not search_dir or not os.path.exists(search_dir):
             continue
-        full = os.path.join(BASE_DIR, name)
-        if os.path.isdir(full) and os.path.exists(os.path.join(full, "state.db")):
-            result.append({"name": name, "path": full})
+        try:
+            for name in sorted(os.listdir(search_dir)):
+                if name.startswith('.'):
+                    continue
+                full = os.path.abspath(os.path.join(search_dir, name))
+                if full not in seen and os.path.isdir(full) and os.path.exists(os.path.join(full, "state.db")):
+                    seen.add(full)
+                    result.append({"name": name, "path": full})
+        except Exception:
+            pass
+    result.sort(key=lambda x: x["name"].lower())
     return jsonify(result)
 
 
@@ -1368,14 +1451,50 @@ def api_train_status():
 
 @app.route("/api/models")
 def api_models():
-    # Scan MODELS_DIR for all supported model formats
+    # Scan MODELS_DIR, BASE_DIR, and APP_DIR for all supported model formats
+    found_paths = set()
     all_models = []
-    if os.path.exists(MODELS_DIR):
-        for root, _, files in os.walk(MODELS_DIR):
+
+    def _scan_dir(directory):
+        if not directory or not os.path.exists(directory):
+            return
+        for root, dirs, files in os.walk(directory):
+            # Skip non-model/system folders
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in {'venv', '.venv', '__pycache__', 'runs', 'static', 'templates', 'tests', 'dist', 'build', 'node_modules', 'annotated_dataset', 'vedio'}]
             for f in files:
                 if Path(f).suffix.lower() in MODEL_EXTS:
-                    rel_path = os.path.relpath(os.path.join(root, f), MODELS_DIR)
-                    all_models.append(rel_path.replace("\\", "/"))
+                    full_p = os.path.abspath(os.path.join(root, f))
+                    if full_p not in found_paths:
+                        found_paths.add(full_p)
+                        if directory == MODELS_DIR:
+                            rel_p = os.path.relpath(full_p, MODELS_DIR).replace("\\", "/")
+                        elif directory == BASE_DIR:
+                            rel_p = os.path.relpath(full_p, BASE_DIR).replace("\\", "/")
+                        else:
+                            rel_p = os.path.basename(full_p)
+                        all_models.append(rel_p)
+
+    if os.path.exists(MODELS_DIR):
+        _scan_dir(MODELS_DIR)
+
+    # Scan top-level BASE_DIR files
+    if os.path.exists(BASE_DIR) and os.path.abspath(BASE_DIR) != os.path.abspath(MODELS_DIR):
+        try:
+            for item in os.listdir(BASE_DIR):
+                full_p = os.path.abspath(os.path.join(BASE_DIR, item))
+                if os.path.isfile(full_p) and Path(item).suffix.lower() in MODEL_EXTS:
+                    if full_p not in found_paths:
+                        found_paths.add(full_p)
+                        all_models.append(item)
+        except Exception:
+            pass
+
+    # Scan parent models folder if distinct
+    parent_models = os.path.abspath(os.path.join(APP_DIR, "..", "models"))
+    if os.path.exists(parent_models) and parent_models not in (os.path.abspath(MODELS_DIR), os.path.abspath(BASE_DIR)):
+        _scan_dir(parent_models)
+
+    all_models.sort(key=lambda x: x.lower())
     presets = [
         "yolov8n.pt", "yolov8s.pt", "yolov8m.pt", "yolov8l.pt", "yolov8x.pt",
         "yolo11n.pt", "yolo11s.pt", "yolo11m.pt", "yolo11l.pt", "yolo11x.pt",
