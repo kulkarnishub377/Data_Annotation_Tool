@@ -1,6 +1,6 @@
 # Free Open Source Data Annotation Tool for Computer Vision 🚀
 
-[![Release](https://img.shields.io/badge/Release-v1.0.0-blue?style=for-the-badge&logo=github)](https://github.com/kulkarnishub377/Data_Annotation_Tool/releases/tag/v1.0.0)
+[![Release](https://img.shields.io/badge/Release-v1.1.0-blue?style=for-the-badge&logo=github)](https://github.com/kulkarnishub377/Data_Annotation_Tool/releases/tag/v1.1.0)
 [![CI Tests](https://github.com/kulkarnishub377/Data_Annotation_Tool/actions/workflows/ci.yml/badge.svg)](https://github.com/kulkarnishub377/Data_Annotation_Tool/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue?style=for-the-badge&logo=python)
 ![Flask](https://img.shields.io/badge/Flask-3.0+-black?style=for-the-badge&logo=flask)
@@ -59,20 +59,23 @@ Data_Annotation_Tool/
 │   └── SECURITY.md              # Security & vulnerability reporting policy
 ├── static/
 │   ├── css/
-│   │   └── style.css            # Dark theme styles, tokens, and animations
+│   │   ├── style.css            # Dark theme styles and design tokens
+│   │   └── features.css         # Styles for newer components (class bar, status bar, pickers)
 │   ├── js/
 │   │   └── app.js               # Frontend canvas math, hotkeys, API & SSE
 │   └── assets/                  # Icons and static media
 ├── scripts/
-│   ├── cleanup.py               # Dataset maintenance & cleanup tool
-│   └── refactor.py              # Legacy dataset upgrade utility
+│   ├── build_exe.py             # PyInstaller desktop build helper
+│   ├── cleanup.py               # Dataset frame-range cleanup tool
+│   ├── compress_dataset.py      # Multi-threaded dataset archiver
+│   └── resize_dataset.py        # Multi-threaded dataset resizer (letterbox / stretch)
 ├── tests/
-│   ├── __init__.py
-│   └── test_app.py              # Automated unit test suite
+│   └── test_app.py              # Automated unit/API test suite (runs on temp data only)
 ├── .env.example                 # Environment variables template
 ├── .gitattributes               # Cross-platform line endings & binary formatting
 ├── .gitignore                   # Comprehensive ignore rules
 ├── app.py                       # Core Flask backend & YOLO engine
+├── CHANGELOG.md                 # Release notes
 ├── config.example.ini           # System configuration template
 ├── index.html                   # Main UI Single Page Application markup
 ├── LICENSE                      # MIT License
@@ -122,6 +125,27 @@ The application automatically defaults to local portable folders. To customize d
 cp config.example.ini config.ini
 ```
 
+Path resolution order (first match wins):
+
+| Setting | 1. Override env var | 2. `config.ini` `[Paths]` | 3. Env / `.env` | 4. Default |
+| :--- | :--- | :--- | :--- | :--- |
+| Workspace (datasets) | `ANNOTATOR_BASE_DIR` | `BASE_DIR` | `BASE_DIR` | parent folder if it has `models/` or `dataset_default/`, else the app folder |
+| Models | `ANNOTATOR_MODELS_DIR` | `MODELS_DIR` | `MODELS_DIR` | `<workspace>/models` |
+| Startup dataset | `ANNOTATOR_OUTPUT_DIR` | `OUTPUT_DIR` | `OUTPUT_DIR` | `<workspace>/dataset_default` |
+
+The `ANNOTATOR_*` variables are meant for test / development instances: they beat `config.ini` and `.env`, so
+you can point a second copy of the app at a scratch folder without touching your real datasets, e.g.
+
+```bash
+# PowerShell
+$env:ANNOTATOR_BASE_DIR = "D:\scratch\annot"; python app.py --browser --port 8052
+# bash
+ANNOTATOR_BASE_DIR=/tmp/annot python app.py --browser --port 8052
+```
+
+Detection thresholds (confidence, IoU) and the auto-label toggle are saved per dataset from the UI;
+`CONF_THRESH` in `config.ini` / `.env` only sets the default for datasets that have not saved their own value.
+
 ---
 
 ## 🚦 Running the Application
@@ -132,27 +156,76 @@ With your virtual environment activated, start the server:
 python app.py
 ```
 
-Then open your browser and navigate to: **[http://127.0.0.1:8051](http://127.0.0.1:8051)**
+It opens **[http://127.0.0.1:8051](http://127.0.0.1:8051)** in your default browser. On Windows you can also double-click `start.bat` (closing its console window stops the app).
+
+How the UI opens is set in `config.ini`:
+
+```ini
+[App]
+# browser (default) | window (desktop window, needs pywebview) |
+# app (Edge/Chrome window without tabs) | none (server only)
+LAUNCH_MODE = browser
+```
+
+A command-line flag overrides it for one run: `--launch browser|window|app|none` (or the shortcuts `--browser`, `--window`, `--no-gui`). The `ANNOTATOR_LAUNCH` environment variable works too.
+
+If the port is already used by a running copy, the app just opens that copy. If it is held by a frozen program, the app warns you and starts on the next free port.
 
 ---
 
-## ⌨️ Essential Keyboard Shortcuts
+## 🔁 Review Workflow
+
+Every image has one of three states, shown as a coloured dot in the image list and a badge in the grid:
+
+| State | Meaning |
+| :--- | :--- |
+| **Pending** (grey) | No label file yet. |
+| **Auto-labelled** (amber) | A label file exists (written by the model or imported) but nobody has checked it. |
+| **Reviewed** (green) | A person saved the image (or pressed `R` to accept it unchanged). |
+
+- The left sidebar has `All · To review · Reviewed` tabs with counts and a `reviewed / total` progress bar.
+- `Enter` saves and moves on; `J` jumps to the next image that is not reviewed yet.
+- Accepting an image with no objects (`R` on a pending image) stores an empty label file, i.e. a reviewed background image.
+- Existing datasets are upgraded automatically: a `reviewed` column is added to `state.db` the first time it is opened (nothing is removed or rewritten).
+
+## ⚙️ Detection Settings, Classes & Model Class Selection
+
+- **Detection settings** (setup Model card and the canvas toolbar `Detection` popover): confidence threshold, overlap (IoU) threshold and an *Auto-label new images* toggle. They are stored per dataset in its `state.db`, so every dataset remembers its own thresholds. Turn auto-labelling off to annotate by hand without a model.
+- **Re-run detection** on the current image or on all images that are not reviewed yet (reviewed images are never overwritten).
+- **Manage classes**: add, rename, merge (e.g. `truck` + `bus` → `vehicle`) or delete classes, with box/image counts per class. You can label without loading any model. Merge and delete rewrite every label file and renumber the remaining classes so ids stay contiguous; a backup of all labels and the class list is saved first in `<dataset>/backups/` (last 10 kept) and can be restored from the `Backups` list. Classes are saved in the dataset and written to `data.yaml`.
+- **Choose classes** for pretrained models: a COCO model (80 classes) defaults to `car, motorcycle, bus, truck`; a custom model defaults to all its classes. Each model class can be saved as a different dataset class (e.g. COCO `motorcycle` → `bike`, `car` + `truck` → `vehicle`). New names are appended to the dataset classes; existing class indices are never renumbered.
+
+## ⌨️ Keyboard Shortcuts
+
+Press `?` in the annotator to see the full, always up-to-date list. Highlights:
 
 | Key | Action |
 | :--- | :--- |
-| `D` | Toggle Draw mode |
-| `Ctrl` (Hold) | Draw box / polygon |
-| `F` | Fit image to screen |
-| `C` | Copy all boxes from previous image |
-| `J` | Jump to next unannotated image |
-| `Q` / `E` | Cycle class of currently selected box |
-| `1` – `9` | Set class 1-9 for selected box |
-| `←` / `→` | Previous / Next image |
-| `Enter` | Save annotations & jump to next image |
-| `Del` | Delete selected box |
-| `Ctrl + Z` / `Ctrl + Y` | Undo / Redo annotation actions |
-| `Wheel` | Zoom in/out (centered on cursor) |
-| `Mid-drag` | Pan canvas |
+| `D` | Toggle draw mode |
+| `Ctrl` (hold) | Draw box / polygon |
+| `1` – `9` | Set the active class, or reassign the selected shapes |
+| `Q` / `E` | Cycle class of the selected shape |
+| `Tab` / `Shift+Tab` | Select next / previous shape |
+| `Ctrl+A` | Select all shapes |
+| `Ctrl+C` / `Ctrl+V` | Copy / paste selected shapes (also across images) |
+| `Ctrl+D` | Duplicate selection |
+| `C` | Copy all shapes from the previous image |
+| `Shift+Arrows` | Nudge selection 1 px (`Alt+Shift` = 10 px) |
+| `Del` | Delete selected shape |
+| `Ctrl+Z` / `Ctrl+Y` | Undo / Redo |
+| `Ctrl+S` | Save |
+| `Enter` | Save & next image |
+| `R` | Mark current image reviewed without changes |
+| `J` | Jump to next image that is not reviewed |
+| `←` / `→` | Previous / next image |
+| `H` / `L` | Hide annotations / toggle label text |
+| `F` or `0` | Fit image to screen |
+| `Space` (hold) | Pan with the left mouse button |
+| `Wheel` / `Mid-drag` | Zoom at cursor / pan |
+| `Esc` | Close popup, cancel drawing, or deselect |
+| `?` | Shortcut sheet |
+
+Polygon datasets: click to add vertices, click the first vertex / double-click / `Enter` to close, `Backspace` removes the last vertex, `Alt+click` deletes a vertex, double-click an edge to insert one.
 
 ---
 
@@ -202,8 +275,11 @@ python scripts/cleanup.py --dir ./dataset_default --start 6601 --end 8200
 Run the automated unit test suite:
 
 ```bash
-python -m unittest discover tests
+python -m unittest discover tests -v
 ```
+
+The tests build small throw-away datasets in a temporary folder; they never read or modify your real
+`dataset_*` folders, never load a YOLO model and need no GPU or network.
 
 ---
 

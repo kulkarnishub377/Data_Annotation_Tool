@@ -1,21 +1,24 @@
 @echo off
+title Data Annotation Studio - close this window to stop
 setlocal
 cd /d "%~dp0"
 
-if exist "dist\DataAnnotationStudio\DataAnnotationStudio.exe" (
-    start "" "dist\DataAnnotationStudio\DataAnnotationStudio.exe"
-    exit /b 0
-)
+rem How the UI opens is set in config.ini -> [App] LAUNCH_MODE (default: browser).
+rem Closing this window stops the app.
 
-if exist "venv\Scripts\pythonw.exe" (
-    start "" "venv\Scripts\pythonw.exe" app.py
-    exit /b 0
+if exist "dist\DataAnnotationStudio\DataAnnotationStudio.exe" (
+    "dist\DataAnnotationStudio\DataAnnotationStudio.exe"
+    exit /b %ERRORLEVEL%
 )
 
 if exist "venv\Scripts\python.exe" (
-    start "" "venv\Scripts\python.exe" app.py
-    exit /b 0
+    "venv\Scripts\python.exe" app.py
+) else (
+    python app.py
 )
 
-start "" python app.py
-exit /b 0
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] Data Annotation Studio exited with code %ERRORLEVEL%.
+    pause
+)

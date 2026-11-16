@@ -7,155 +7,223 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Data Annotation Tool — Professional Computer Vision Labeling</title>
-  <link rel="icon" type="image/png" href="/static/assets/logo_transparent.png">
+  <title>Data Annotation Studio</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
   <link rel="shortcut icon" href="/static/assets/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.2.3">
+  <link rel="stylesheet" href="/static/css/features.css?v=1.2.3">
 </head>
 
 <body>
 
   <!-- ═══════════════════════════════ SETUP SCREEN ══════════════════════════ -->
   <div id="setup-screen" class="setup-screen-wrapper">
-    <!-- Top-left branding navbar -->
     <header class="setup-navbar">
-      <div class="d-flex align-center gap-14">
-        <img src="/static/assets/logo_transparent.png" alt="Data Annotation Tool" style="width: 44px; height: 44px; object-fit: contain; background: transparent;">
-        <div>
-          <div class="fs-17 fw-700 text-white letter-spacing-wide">Data Annotation Tool</div>
-          <div class="fs-11 text-slate">Professional Computer Vision Workflows • v1.0.0</div>
-        </div>
+      <div class="home-brand">
+        <img src="/static/assets/logo.svg" alt="" class="setup-logo">
+        <span class="home-brand-name">Data Annotation Studio</span>
       </div>
-      <div class="d-flex align-center gap-10">
-        <button class="btn btn-secondary p-6-14 fs-12 d-flex align-center gap-6" id="btn-help-setup" title="Help & Shortcuts">
-          <i class="fa-solid fa-circle-question text-blue"></i> Shortcuts & Help
-        </button>
+      <div class="home-header-actions">
+        <div class="device-chip cpu" id="home-device-chip" title="Inference device">CPU</div>
+        <button class="sb-help home-help" id="btn-help-setup" title="Help and keyboard shortcuts" aria-label="Help and keyboard shortcuts"><i class="fa-solid fa-circle-question"></i></button>
       </div>
     </header>
 
-    <!-- Main Content Body -->
-    <div class="setup-body">
-      <div class="setup-cards-grid">
-        <!-- Column 1: Model Setup -->
-        <div class="glass-setup-card">
-          <div class="card-step-badge">1</div>
-          <h2 class="setup-card-title"><i class="fa-solid fa-brain text-blue"></i> Model Configuration</h2>
-          <p class="setup-card-desc">Load pre-trained YOLO or custom .pt weights for auto-annotation.</p>
-          
-          <div class="field-label">Pre-trained Base Model</div>
-          <select id="model-preset" class="field-select glass-input mb-8"></select>
-          
-          <div class="divider-text-compact"><span>OR</span></div>
-          
-          <div class="field-label">Local Model File <span class="hint">(.pt, .onnx, .engine)</span></div>
-          <div class="d-flex gap-8 mb-12">
-            <select id="model-select" class="field-select glass-input flex-1"></select>
-            <button class="btn btn-secondary" id="btn-browse-model" title="Browse for custom model file on disk"><i class="fa-solid fa-folder"></i> Browse</button>
-          </div>
-          
-          <div class="field-label">Inference Device</div>
-          <select id="device-select" class="field-select glass-input">
-            <option value="auto">Auto-Detect (Recommended)</option>
-            <option value="cpu">CPU</option>
-            <option value="0">GPU 0 (CUDA)</option>
-            <option value="mps">Apple MPS</option>
-          </select>
-          <div id="device-autodetect" class="device-status mt-6 mb-12">Detecting hardware devices…</div>
-          
-          <button class="btn btn-primary btn-glow btn-full" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load Model</button>
-          
-          <div id="classes-preview" class="d-none mt-12">
-            <div class="field-label">Detected Classes</div>
-            <div id="classes-tags" class="class-tags-container"></div>
-          </div>
+    <div class="home-layout">
+      <!-- Left rail: datasets -->
+      <aside id="home-datasets" class="home-rail" aria-label="Datasets">
+        <div class="home-rail-head">
+          <span class="home-rail-title"><i class="fa-solid fa-database"></i> Datasets</span>
+          <button class="btn btn-secondary btn-sm" id="btn-home-new" title="Create a dataset from a folder of images" aria-label="New dataset"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <input type="search" id="home-ds-search" class="glass-input home-ds-search" placeholder="Search datasets" spellcheck="false" aria-label="Search datasets" />
+        <div id="home-ds-list" class="home-ds-list" role="listbox" aria-label="Datasets"></div>
+        <div class="home-rail-foot" id="home-version">v1.1.0</div>
+      </aside>
+
+      <main class="home-main">
+        <!-- Two clear choices: open an existing dataset or create a new one -->
+        <div class="home-choice" id="home-choice" role="group" aria-label="What do you want to do?">
+          <button type="button" class="home-choice-btn" id="choice-open" data-home-mode="open" aria-pressed="true" aria-controls="home-open-panel">
+            <i class="fa-solid fa-folder-open home-choice-icon" aria-hidden="true"></i>
+            <span class="home-choice-text">
+              <span class="home-choice-title">Open existing dataset</span>
+              <span class="home-choice-desc">Keep labelling a dataset made with this tool</span>
+            </span>
+          </button>
+          <button type="button" class="home-choice-btn" id="choice-create" data-home-mode="create" aria-pressed="false" aria-controls="new-dataset-card">
+            <i class="fa-solid fa-plus home-choice-icon" aria-hidden="true"></i>
+            <span class="home-choice-text">
+              <span class="home-choice-title">Create new dataset</span>
+              <span class="home-choice-desc">Import a folder of images and split it</span>
+            </span>
+          </button>
         </div>
 
-        <!-- Column 2: Dataset Setup -->
-        <div class="glass-setup-card">
-          <div class="card-step-badge">2</div>
-          <h2 class="setup-card-title"><i class="fa-solid fa-folder-tree text-cyan"></i> Dataset Management</h2>
-          <p class="setup-card-desc">Open an existing dataset or ingest raw images to begin.</p>
-          
-          <div class="dataset-section">
-            <div class="field-label">Existing Dataset</div>
-            <select id="existing-dataset-select" class="field-select glass-input mb-8">
-              <option value="">— choose an existing dataset from root —</option>
-            </select>
-            <div class="d-flex gap-8 mb-10">
-              <input type="text" id="existing-dataset-input" class="glass-input flex-1" placeholder="Or custom directory..." readonly />
-              <button class="btn btn-secondary" id="btn-browse-existing"><i class="fa-solid fa-folder"></i> Browse</button>
-            </div>
-            <div id="existing-info" class="text-green-info d-none mb-8"></div>
-            <button class="btn btn-primary btn-glow btn-full" id="btn-load-existing" disabled><i class="fa-solid fa-folder-open"></i> Open Dataset</button>
-          </div>
-          
-          <div class="divider-text-compact"><span>OR CREATE NEW</span></div>
-          
-          <div class="dataset-section">
-            <div class="field-label">Source Images Directory</div>
-            <div class="d-flex gap-8 mb-8">
-              <input type="text" id="src-input" class="glass-input flex-1" placeholder="Folder path..." readonly />
-              <button class="btn btn-secondary" id="btn-browse-src"><i class="fa-solid fa-folder"></i> Browse</button>
-            </div>
-            <div id="src-info" class="text-green-info d-none mb-6"></div>
-            <div id="img-badge" class="mb-10 d-none"></div>
-            
-            <div class="d-flex gap-10 mb-10">
-              <div class="flex-1">
-                <div class="field-label">Type</div>
-                <select id="dataset-type-select" class="field-select glass-input">
-                  <option value="bbox">Bounding Box</option>
-                  <option value="polygon">Polygon</option>
-                </select>
+        <div class="home-cards">
+          <div class="home-mode-col">
+            <!-- Open existing: Continue card for the selected dataset -->
+            <section class="glass-setup-card home-open-panel" id="home-open-panel" aria-labelledby="choice-open">
+              <div id="home-open-state" class="home-open-state" aria-live="polite"></div>
+              <div id="continue-card" class="home-continue d-none">
+                <div class="home-continue-info">
+                  <h2 class="home-continue-name" id="continue-name">–</h2>
+                  <div class="home-continue-meta" id="continue-meta"></div>
+                  <div class="home-continue-progress">
+                    <span id="continue-count"></span>
+                    <div class="list-progress-track home-continue-track"><div class="list-progress-bar" id="continue-bar"></div></div>
+                  </div>
+                  <div class="field-msg muted" id="continue-status"></div>
+                </div>
+                <div id="continue-locked" class="home-lock d-none" role="alert">
+                  <i class="fa-solid fa-lock home-lock-icon" aria-hidden="true"></i>
+                  <div class="home-lock-body">
+                    <div class="home-lock-title">This dataset is locked</div>
+                    <p class="home-lock-text" id="continue-locked-reason">Another program is holding its database open, usually an old copy of this app that froze.</p>
+                    <p class="home-lock-text">Close old copies of the app in Task Manager → Details → python.exe, then click Retry.</p>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-lock-retry"><i class="fa-solid fa-rotate-right"></i> Retry</button>
+                  </div>
+                </div>
+                <div class="home-continue-actions">
+                  <button class="btn btn-secondary" id="btn-view-dataset"><i class="fa-solid fa-images"></i> View dataset</button>
+                  <button class="btn btn-primary" id="btn-continue" title="Open annotator (Enter)"><i class="fa-solid fa-arrow-right"></i> Open annotator</button>
+                </div>
               </div>
-              <div class="flex-1">
-                <div class="field-label">Split (T / V / Ts)</div>
-                <div class="ratio-row glass-ratios mb-0">
-                  <div class="ratio-col"><label>T</label><input type="number" id="r-train" value="70" min="1" max="98" /></div>
-                  <div class="ratio-col"><label>V</label><input type="number" id="r-valid" value="20" min="1" max="98" /></div>
-                  <div class="ratio-col"><label>Ts</label><input type="number" id="r-test" value="10" min="1" max="98" /></div>
+              <div class="home-open-foot">
+                <button class="btn btn-secondary btn-sm" id="btn-open-other"><i class="fa-solid fa-folder-open"></i> Choose another folder…</button>
+                <p class="field-msg muted" id="home-base-hint">The Datasets list shows every dataset found in the datasets folder.</p>
+              </div>
+            </section>
+
+            <!-- Create new: source folder, type, split -->
+            <section class="glass-setup-card d-none" id="new-dataset-card" aria-labelledby="choice-create">
+              <h2 class="setup-card-title"><i class="fa-solid fa-plus"></i> Create new dataset</h2>
+              <p class="setup-card-desc">Import a folder of images. Files are hard-linked where possible, so nothing is copied twice. Load a model first if you want the images pre-labelled.</p>
+
+              <div class="field-label">Image folder</div>
+              <div class="d-flex gap-8 mb-8">
+                <input type="text" id="src-input" class="glass-input flex-1" placeholder="Paste a folder path" spellcheck="false" />
+                <button class="btn btn-secondary" id="btn-browse-src"><i class="fa-solid fa-folder-open"></i> Browse</button>
+              </div>
+              <div id="src-info" class="field-msg d-none mb-6"></div>
+
+              <div class="field-label">Label type</div>
+              <select id="dataset-type-select" class="field-select glass-input mb-10">
+                <option value="bbox">Bounding box</option>
+                <option value="polygon">Polygon</option>
+              </select>
+
+              <div class="field-label">Split % (train / valid / test)</div>
+              <div class="ratio-row glass-ratios mb-12">
+                <div class="ratio-col"><label for="r-train">Train</label><input type="number" id="r-train" value="70" min="0" max="100" /></div>
+                <div class="ratio-col"><label for="r-valid">Valid</label><input type="number" id="r-valid" value="20" min="0" max="100" /></div>
+                <div class="ratio-col"><label for="r-test">Test</label><input type="number" id="r-test" value="10" min="0" max="100" /></div>
+              </div>
+
+              <button class="btn btn-primary btn-full" id="btn-ingest" disabled><i class="fa-solid fa-plus"></i> Create dataset</button>
+
+              <div class="prog-wrap glass-prog mt-8 d-none" id="ingest-prog">
+                <div class="prog-header"><span id="ip-label">Importing images…</span><span id="ip-num">0 / 0</span></div>
+                <div class="prog-track"><div class="prog-bar" id="ip-bar"></div></div>
+                <div class="prog-status" id="ip-status"></div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Model: used by both choices -->
+          <section class="glass-setup-card">
+            <h2 class="setup-card-title"><i class="fa-solid fa-microchip"></i> Model</h2>
+            <p class="setup-card-desc">Optional, for either choice. Load a YOLO model to pre-label images, or skip this and label by hand.</p>
+
+            <div class="field-label">Pre-trained model (downloads if needed)</div>
+            <select id="model-preset" class="field-select glass-input mb-8"></select>
+
+            <div class="field-label">Or a local model file <span class="hint">(.pt, .onnx, .engine)</span></div>
+            <div class="d-flex gap-8 mb-12">
+              <select id="model-select" class="field-select glass-input flex-1"></select>
+              <button class="btn btn-secondary" id="btn-browse-model" title="Choose a model file on disk"><i class="fa-solid fa-folder-open"></i> Browse</button>
+            </div>
+            <div id="models-msg" class="field-msg muted d-none home-models-msg" aria-live="polite"></div>
+
+            <div class="field-label">Inference device</div>
+            <div class="d-flex gap-8">
+              <select id="device-select" class="field-select glass-input flex-1">
+                <option value="auto">Auto (recommended)</option>
+                <option value="cpu">CPU</option>
+              </select>
+              <button class="btn btn-primary" id="btn-load-model"><i class="fa-solid fa-bolt"></i> Load model</button>
+            </div>
+            <div id="device-autodetect" class="field-msg muted mt-6">Checking for GPUs…</div>
+
+            <div class="mc-wrap" id="mc-wrap">
+              <div class="field-label">Classes to auto-label</div>
+              <div id="mc-info" class="field-msg muted">Load a model to choose which of its classes are labelled.</div>
+              <div id="mc-chips" class="mc-chips"></div>
+              <div class="mc-anchor" id="mc-anchor-setup">
+                <button id="mc-btn" class="btn btn-secondary btn-sm" type="button" aria-haspopup="true" aria-expanded="false" disabled><i class="fa-solid fa-wand-magic-sparkles"></i> <span id="mc-btn-text">Choose classes</span></button>
+                <div id="mc-pop" class="mc-pop" hidden>
+                  <div class="mc-search"><i class="fa-solid fa-magnifying-glass"></i><input id="mc-search" type="search" placeholder="Search classes" aria-label="Search classes" spellcheck="false"></div>
+                  <div class="mc-presets">
+                    <button type="button" class="btn btn-secondary btn-sm" data-mc-preset="default" id="mc-preset-default"><i class="fa-solid fa-car-side"></i> <span id="mc-preset-default-text">Vehicles</span></button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-mc-preset="all"><i class="fa-solid fa-list-check"></i> Select all</button>
+                  </div>
+                  <div id="mc-list" class="mc-list"></div>
+                  <div id="mc-summary" class="mc-summary"></div>
                 </div>
               </div>
             </div>
-            
-            <button class="btn btn-primary btn-glow btn-full" id="btn-ingest" disabled><i class="fa-solid fa-download"></i> Ingest Images</button>
-            
-            <div class="prog-wrap glass-prog mt-8" id="ingest-prog">
-              <div class="prog-header"><span id="ip-label">Linking images…</span><span id="ip-num">0 / 0</span></div>
-              <div class="prog-track"><div class="prog-bar" id="ip-bar"></div></div>
-              <div class="prog-status" id="ip-status"></div>
+
+            <div class="settings-block" id="settings-block">
+              <div class="settings-row">
+                <label for="conf-slider" class="settings-label"><i class="fa-solid fa-sliders"></i> Confidence</label>
+                <span id="conf-value" class="settings-value">0.25</span>
+              </div>
+              <input type="range" id="conf-slider" min="0.05" max="0.95" step="0.01" value="0.25" />
+              <div class="settings-row">
+                <label for="iou-slider" class="settings-label">Overlap (IoU)</label>
+                <span id="iou-value" class="settings-value">0.70</span>
+              </div>
+              <input type="range" id="iou-slider" min="0.30" max="0.90" step="0.01" value="0.70" />
+              <label class="switch-row" for="auto-label-toggle">
+                <input type="checkbox" id="auto-label-toggle" checked />
+                <span>Auto-label new images</span>
+              </label>
+              <div id="settings-hint" class="field-msg muted">The model labels each image the first time you open it.</div>
+              <div id="settings-saved" class="field-msg muted"></div>
             </div>
-          </div>
+
+            <div id="classes-preview" class="mt-12">
+              <div class="d-flex justify-between align-center">
+                <div class="field-label mb-0">Dataset classes</div>
+                <button class="btn btn-secondary btn-sm" id="btn-edit-classes-setup"><i class="fa-solid fa-tags"></i> Manage classes</button>
+              </div>
+              <div id="classes-tags" class="class-tags-container"></div>
+              <div id="classes-msg" class="field-msg d-none mt-6" aria-live="polite"></div>
+            </div>
+          </section>
         </div>
-      </div>
-    </div>
-    
-    <!-- Floating Resume Banner (Shown only when returning to setup during an active session) -->
-    <div id="existing-banner" class="glass-banner-fixed d-none">
-      <span id="existing-text" class="text-white fw-600 fs-13"><i class="fa-solid fa-folder-open text-cyan mr-6"></i> Active Dataset Loaded</span>
-      <button class="btn btn-primary btn-glow fs-13 p-6-16" id="btn-open">Return to Annotator →</button>
+      </main>
     </div>
   </div>
 
   <!-- ═══════════════════════════════ MAIN APP ═════════════════════════════ -->
-  <div id="app" class="hidden" style="display:none;">
+  <div id="app" style="display:none;">
 
     <!-- TOPBAR -->
     <div id="topbar">
       <div class="logo">
-        <img src="/static/assets/logo_transparent.png" alt="Logo" class="logo-icon-img" style="width: 30px; height: 30px; object-fit: contain; margin-right: 8px; background: transparent;">
-        <span class="logo-text">Data Annotation Tool</span>
+        <img src="/static/assets/logo.svg" alt="" class="logo-icon-img">
+        <span class="logo-text">Data Annotation Studio</span>
       </div>
       <div class="split-tabs mr-15 border-r-dark pr-15">
-        <button class="stab active" id="mode-annotate" onclick="setAppMode('annotate')"><i
-            class="fa-solid fa-pen-nib"></i> Annotate</button>
-        <button class="stab" id="mode-grid" onclick="setAppMode('grid')"><i class="fa-solid fa-images"></i> View
-          Dataset</button>
+        <button class="stab active" id="mode-annotate"><i class="fa-solid fa-pen-nib"></i> Annotate</button>
+        <button class="stab" id="mode-grid"><i class="fa-solid fa-images"></i> Browse</button>
       </div>
       <div class="split-tabs">
         <button class="stab active split-btn" data-split="train">Train</button>
@@ -163,71 +231,93 @@
         <button class="stab split-btn" data-split="test">Test</button>
       </div>
       <div class="spacer"></div>
-      <!-- Progress ring -->
-      <div class="prog-ring-wrap" title="Annotation progress">
-        <svg width="22" height="22" viewBox="0 0 22 22">
-          <circle cx="11" cy="11" r="9" fill="none" stroke="#1e2535" stroke-width="2.5" />
-          <circle id="prog-ring-circle" cx="11" cy="11" r="9" fill="none" stroke="#3b82f6" stroke-width="2.5"
-            stroke-linecap="round" stroke-dasharray="56.5" stroke-dashoffset="56.5" transform="rotate(-90 11 11)"
-            class="svg-transition" />
+      <div class="prog-ring-wrap" title="Reviewed images across all splits">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+          <circle class="ring-track" cx="11" cy="11" r="9" fill="none" stroke-width="2.5" />
+          <circle id="prog-ring-circle" class="ring-fill" cx="11" cy="11" r="9" fill="none" stroke-width="2.5"
+            stroke-linecap="round" stroke-dasharray="56.5" stroke-dashoffset="56.5" transform="rotate(-90 11 11)" />
         </svg>
         <span id="prog-pct">0%</span>
       </div>
-      <div class="stat-chip">Train <b id="s-train">–</b></div>
-      <div class="stat-chip">Valid <b id="s-valid">–</b></div>
-      <div class="stat-chip">Test <b id="s-test">–</b></div>
-      <!-- Device chip (populated after model load) -->
+      <div class="stat-chip" title="Reviewed / total">Train <b id="s-train">–</b></div>
+      <div class="stat-chip" title="Reviewed / total">Valid <b id="s-valid">–</b></div>
+      <div class="stat-chip" title="Reviewed / total">Test <b id="s-test">–</b></div>
       <div class="device-chip cpu" id="device-chip" title="Inference device">CPU</div>
-      <!-- Session timer -->
-      <span class="session-timer" id="session-timer" title="Session time">00:00</span>
-      <!-- Auto-save toggle -->
-      <label class="toggle-wrap on" id="autosave-label" title="Auto-Save">
+      <span class="session-timer" id="session-timer" title="Time in this session">00:00</span>
+      <label class="toggle-wrap on" id="autosave-label" title="Save changes automatically">
         <input type="checkbox" id="autosave-toggle" checked>
         <div class="toggle-slider"></div>
-        <span>Auto-Save</span>
+        <span>Auto-save</span>
       </label>
-      <button class="btn btn-secondary fs-11 p-4-10" id="btn-goto-setup"><i
-          class="fa-solid fa-gear"></i> Setup</button>
-      <button class="btn btn-secondary fs-11 p-4-10" id="btn-fullscreen" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i> Fullscreen</button>
+      <button class="btn btn-secondary fs-11 p-4-10" id="btn-goto-setup"><i class="fa-solid fa-gear"></i> Setup</button>
+      <button class="btn btn-secondary fs-11 p-4-10" id="btn-fullscreen" title="Toggle full screen" aria-label="Toggle full screen"><i class="fa-solid fa-maximize"></i></button>
     </div>
 
     <!-- GRID VIEW -->
     <div id="grid-view">
       <div class="grid-header">
         <div class="grid-controls">
-          <select id="grid-filter" class="field-select w-140 p-6-10">
-            <option value="all">All Images</option>
-            <option value="done">Annotated Only</option>
-            <option value="pending">Pending Only</option>
+          <select id="grid-filter" class="field-select w-140 p-6-10" aria-label="Status filter">
+            <option value="all">All images</option>
+            <option value="auto">To review</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="pending">No labels</option>
           </select>
-          <select id="grid-class-filter" class="field-select w-140 p-6-10">
-            <option value="">Any Class</option>
+          <div class="det-anchor" id="grid-class-anchor">
+            <button type="button" class="btn btn-secondary p-6-12" id="btn-grid-class-filter" aria-haspopup="true" aria-expanded="false" title="Filter by classes">
+              <i class="fa-solid fa-tags"></i> <span id="grid-class-label">All classes</span> <i class="fa-solid fa-chevron-down fs-10 ml-4"></i>
+            </button>
+            <div id="grid-class-pop" class="det-pop grid-class-pop" hidden>
+              <div class="grid-class-pop-head">
+                <span class="fs-12 fw-600">Filter classes</span>
+                <div class="d-flex gap-4">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-grid-cls-all">All</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-grid-cls-clear">Clear</button>
+                </div>
+              </div>
+              <div id="grid-class-list" class="grid-class-pop-list"></div>
+            </div>
+          </div>
+          <input type="hidden" id="grid-class-filter" value="" />
+          <button type="button" class="btn btn-secondary p-6-12" id="btn-grid-toggle-roi" title="Toggle ROI / annotations on/off (H)"><i class="fa-solid fa-eye" id="grid-roi-icon"></i> <span id="grid-roi-label">ROI: On</span></button>
+          <button class="btn btn-secondary p-6-12" id="btn-grid-manage-classes" title="Manage classes"><i class="fa-solid fa-tags"></i> Manage classes</button>
+          <span id="grid-health-chip" class="grid-health-chip d-none">
+            <span id="grid-health-text">Health filter</span>
+            <button id="btn-clear-health-filter" title="Clear health filter"><i class="fa-solid fa-xmark"></i></button>
+          </span>
+          <button class="btn btn-secondary p-6-12" id="btn-grid-refresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <button class="btn btn-secondary p-6-12" id="btn-open-health"><i class="fa-solid fa-heart-pulse"></i> Dataset health</button>
+          <select id="export-format" class="field-select w-140 p-6-10" aria-label="Export format">
+            <option value="yolo">YOLO format</option>
+            <option value="coco">COCO format</option>
           </select>
-          <button class="btn btn-secondary p-6-12" onclick="loadGridPage(1)">Refresh</button>
-          <button class="btn btn-secondary p-6-12" onclick="openHealthDashboard()"><i class="fa-solid fa-heart-pulse"></i> Dataset Health</button>
-          <select id="export-format" class="field-select w-140 p-6-10">
-            <option value="yolo">YOLO Format</option>
-            <option value="coco">COCO Format</option>
-          </select>
-          <button class="btn btn-primary p-6-12" id="btn-export-dataset"><i class="fa-solid fa-file-export"></i> Export Dataset</button>
+          <button class="btn btn-primary p-6-12" id="btn-export-dataset"><i class="fa-solid fa-file-export"></i> Export</button>
         </div>
         <div class="grid-pagination">
-          <button class="btn btn-secondary p-6-12" id="grid-prev" onclick="loadGridPage(gridPage-1)">← Prev</button>
+          <span id="grid-total" class="text-slate-light fs-12 mr-8"></span>
+          <button class="btn btn-secondary p-6-12" id="grid-prev">Previous</button>
           <span id="grid-page-info" class="text-slate-light fs-13 fw-600 mx-10">Page 1 / 1</span>
-          <button class="btn btn-secondary p-6-12" id="grid-next" onclick="loadGridPage(gridPage+1)">Next →</button>
+          <button class="btn btn-secondary p-6-12" id="grid-next">Next</button>
+        </div>
+      </div>
+      <div id="grid-batch-bar" class="grid-batch-bar d-none">
+        <div class="d-flex align-center gap-8">
+          <i class="fa-solid fa-circle-check text-accent"></i>
+          <span><strong id="grid-batch-count">0</strong> images selected</span>
+        </div>
+        <div class="d-flex align-center gap-6">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-grid-select-page"><i class="fa-regular fa-square-check"></i> Select page</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-grid-deselect-all"><i class="fa-regular fa-square"></i> Deselect all</button>
+          <button type="button" class="btn btn-danger btn-sm" id="btn-grid-batch-delete"><i class="fa-solid fa-trash"></i> Delete selected (<span id="grid-batch-del-num">0</span>)</button>
         </div>
       </div>
       <div class="grid-scroll-area">
-        <div class="grid-content" id="grid-content">
-          <!-- Cards go here -->
-        </div>
+        <div class="grid-content" id="grid-content"></div>
       </div>
-      
-      <!-- GRID FOOTER -->
       <div class="grid-footer p-10-20 bg-darker-panel border-t-dark d-flex justify-between align-center flex-shrink-0">
         <div class="grid-controls">
-          <span class="text-slate-light fs-12 mr-8 fw-600">Images per page:</span>
-          <select id="grid-limit" class="field-select w-80 p-6-10" onchange="loadGridPage(1)">
+          <label for="grid-limit" class="text-slate-light fs-12 mr-8 fw-600">Images per page</label>
+          <select id="grid-limit" class="field-select w-80 p-6-10">
             <option value="20">20</option>
             <option value="50" selected>50</option>
             <option value="100">100</option>
@@ -236,27 +326,28 @@
           </select>
         </div>
         <div class="grid-pagination">
-          <button class="btn btn-secondary p-6-12" id="grid-prev-btm" onclick="loadGridPage(gridPage-1)">← Prev</button>
+          <button class="btn btn-secondary p-6-12" id="grid-prev-btm">Previous</button>
           <span id="grid-page-info-btm" class="text-slate-light fs-13 fw-600 mx-10">Page 1 / 1</span>
-          <button class="btn btn-secondary p-6-12" id="grid-next-btm" onclick="loadGridPage(gridPage+1)">Next →</button>
+          <button class="btn btn-secondary p-6-12" id="grid-next-btm">Next</button>
         </div>
       </div>
     </div>
 
-    <!-- ANNOTATOR LEFT SIDEBAR -->
+    <!-- LEFT SIDEBAR -->
     <div id="left">
       <div class="sh d-flex justify-between align-center">
-        <span>Images <span id="img-count" class="text-blue-highlight fw-700"></span></span>
-        <button class="btn btn-secondary p-2-6 fs-10" id="btn-add-images"><i
-            class="fa-solid fa-plus"></i> Add</button>
+        <span>Images</span>
+        <button class="btn btn-secondary p-2-6 fs-10" id="btn-add-images"><i class="fa-solid fa-images"></i> Add images</button>
       </div>
-      <input id="search" type="text" placeholder="Search…" />
-      <div id="health-warnings" class="my-8 fs-11 text-red-warning fw-600 d-none bg-warning-box p-6 border-radius-4 border-red-dark text-center"></div>
-      <!-- Filter tabs -->
-      <div class="filter-tabs">
-        <button class="ftab active" data-filter="all">All</button>
-        <button class="ftab" data-filter="done"><i class="fa-solid fa-check"></i> Done</button>
-        <button class="ftab" data-filter="pending"><i class="fa-regular fa-circle"></i> Pending</button>
+      <div class="list-progress">
+        <div class="list-progress-text"><span id="img-count">0 / 0 reviewed</span><span id="img-count-pct"></span></div>
+        <div class="list-progress-track"><div class="list-progress-bar" id="list-progress-bar"></div></div>
+      </div>
+      <input id="search" type="text" placeholder="Search file names" spellcheck="false" />
+      <div class="filter-tabs" role="tablist">
+        <button class="ftab active" data-filter="all">All <span class="ftab-count" id="fc-all">0</span></button>
+        <button class="ftab" data-filter="toreview">To review <span class="ftab-count" id="fc-toreview">0</span></button>
+        <button class="ftab" data-filter="reviewed">Reviewed <span class="ftab-count" id="fc-reviewed">0</span></button>
       </div>
       <div id="image-list-viewport">
         <div id="image-list-spacer">
@@ -269,40 +360,91 @@
     <div id="canvas-area">
       <div id="canvas-toolbar">
         <span id="canvas-filename">Select an image</span>
+        <div class="tb-group">
+          <button class="tbtn" id="btn-draw" title="Draw (D, or hold Ctrl)"><i class="fa-solid fa-vector-square" id="btn-draw-icon"></i> <span class="tbtn-label">Draw</span></button>
+          <button class="tbtn" id="btn-next-unanno" title="Next image to review (J)" aria-label="Next image to review"><i class="fa-solid fa-forward-step"></i> <span class="tbtn-label">Next to review</span></button>
+          <div class="det-anchor">
+            <button class="tbtn" id="det-btn" type="button" title="Detection settings and re-run" aria-label="Detection" aria-haspopup="true" aria-expanded="false"><i class="fa-solid fa-sliders"></i> <span class="tbtn-label">Detection</span></button>
+            <div id="det-pop" class="det-pop" hidden>
+              <div class="settings-row">
+                <label for="det-conf" class="settings-label">Confidence</label>
+                <span id="det-conf-value" class="settings-value">0.25</span>
+              </div>
+              <input type="range" id="det-conf" min="0.05" max="0.95" step="0.01" value="0.25" />
+              <div class="settings-row">
+                <label for="det-iou" class="settings-label">Overlap (IoU)</label>
+                <span id="det-iou-value" class="settings-value">0.70</span>
+              </div>
+              <input type="range" id="det-iou" min="0.30" max="0.90" step="0.01" value="0.70" />
+              <label class="switch-row" for="det-auto">
+                <input type="checkbox" id="det-auto" checked />
+                <span>Auto-label new images</span>
+              </label>
+              <label class="switch-row" for="ask-class-toggle" title="Open the class palette after each new shape">
+                <input type="checkbox" id="ask-class-toggle" />
+                <span>Ask class after drawing</span>
+              </label>
+              <div id="det-saved" class="field-msg muted"></div>
+              <div class="det-actions">
+                <button class="btn btn-secondary btn-full" id="btn-relabel-one" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> Re-run on this image</button>
+                <button class="btn btn-secondary btn-full" id="btn-relabel-all" type="button"><i class="fa-solid fa-layer-group"></i> Re-run on unreviewed images</button>
+              </div>
+              <div class="prog-wrap d-none" id="relabel-prog">
+                <div class="prog-header"><span id="relabel-label">Re-running…</span><span id="relabel-num">0 / 0</span></div>
+                <div class="prog-track"><div class="prog-bar" id="relabel-bar"></div></div>
+              </div>
+            </div>
+          </div>
+          <button class="tbtn" id="btn-toggle-shapes" title="Hide or show annotations (H)" aria-label="Hide annotations"><i class="fa-solid fa-eye"></i></button>
+          <button class="tbtn" id="btn-zoom-out" title="Zoom out (-)" aria-label="Zoom out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+          <button class="tbtn" id="btn-zoom-in" title="Zoom in (+)" aria-label="Zoom in"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+          <button class="tbtn" id="btn-fit" title="Fit to screen (0 or F)" aria-label="Fit to screen"><i class="fa-solid fa-expand"></i> <span class="tbtn-label">Fit</span></button>
+          <div class="det-anchor">
+            <button class="tbtn" id="adjust-btn" type="button" title="Brightness, contrast and filters" aria-label="Adjust image" aria-haspopup="true" aria-expanded="false"><i class="fa-solid fa-circle-half-stroke"></i> <span class="tbtn-label">Adjust</span></button>
+            <div id="adjust-pop" class="det-pop adjust-pop" hidden>
+              <div class="settings-row"><label for="bc-bright" class="settings-label"><i class="fa-solid fa-sun"></i> Brightness</label>
+                <button class="icon-btn" id="bc-bright-reset" title="Reset brightness" aria-label="Reset brightness"><i class="fa-solid fa-rotate-left"></i></button></div>
+              <input type="range" id="bc-bright" min="0.3" max="2.5" step="0.05" value="1">
+              <div class="settings-row"><label for="bc-contrast" class="settings-label"><i class="fa-solid fa-circle-half-stroke"></i> Contrast</label>
+                <button class="icon-btn" id="bc-contrast-reset" title="Reset contrast" aria-label="Reset contrast"><i class="fa-solid fa-rotate-left"></i></button></div>
+              <input type="range" id="bc-contrast" min="0.3" max="2.5" step="0.05" value="1">
+              <div class="settings-row">
+                <select id="extra-filter-type" class="filter-select" aria-label="Extra filter">
+                  <option value="none">Extra filter: none</option>
+                  <option value="saturate">Saturate</option>
+                  <option value="grayscale">Grayscale</option>
+                  <option value="invert">Invert</option>
+                  <option value="sepia">Sepia</option>
+                </select>
+                <button class="icon-btn" id="extra-filter-reset" title="Reset filter" aria-label="Reset filter"><i class="fa-solid fa-rotate-left"></i></button>
+              </div>
+              <input type="range" id="extra-filter-val" min="0" max="100" step="1" value="0" aria-label="Filter amount">
+              <button class="btn btn-secondary btn-sm btn-full mt-6" id="btn-adjust-reset"><i class="fa-solid fa-rotate-left"></i> Reset all</button>
+            </div>
+          </div>
+        </div>
         <div class="spacer"></div>
-        <button class="tbtn" id="btn-draw" title="Draw box (D)"><i class="fa-solid fa-pen"></i> Draw</button>
-        <button class="tbtn" id="btn-next-unanno" title="Jump to next unannotated image (J)"><i
-            class="fa-solid fa-forward-step"></i> Unannotated</button>
-        <button class="tbtn" id="btn-zoom-in" title="Zoom In (+)"><i
-            class="fa-solid fa-magnifying-glass-plus"></i></button>
-        <button class="tbtn" id="btn-zoom-out" title="Zoom Out (-)"><i
-            class="fa-solid fa-magnifying-glass-minus"></i></button>
-        <button class="tbtn" id="btn-fit" title="Fit to screen (F)"><i class="fa-solid fa-expand"></i> Fit</button>
-        <!-- Brightness / Contrast -->
-        <div class="bc-wrap" title="Brightness">
-          <label><i class="fa-solid fa-sun"></i></label>
-          <input type="range" id="bc-bright" min="0.3" max="2.5" step="0.05" value="1">
-          <button id="bc-bright-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+        <button class="tbtn red" id="btn-del-img" title="Delete this image from the dataset" aria-label="Delete image"><i class="fa-solid fa-trash"></i></button>
+        <button id="btn-save-next" title="Save and go to next image (Enter)"><i class="fa-solid fa-circle-check"></i> Save and next</button>
+      </div>
+
+      <!-- Active class bar: one fixed row -->
+      <div id="class-bar">
+        <button class="active-class-pill" id="active-class-pill" type="button" title="Choose class (/ or K)" aria-haspopup="listbox" aria-expanded="false">
+          <span class="swatch" id="acp-swatch"></span>
+          <span class="acp-name" id="acp-name">No classes</span>
+          <kbd id="acp-key" class="d-none"></kbd>
+          <i class="fa-solid fa-chevron-down acp-caret"></i>
+        </button>
+        <div id="class-chips" class="class-chips"></div>
+        <button class="class-more d-none" id="class-more" type="button" title="All classes (/ or K)">+0 more</button>
+        <button class="btn btn-secondary btn-sm ml-auto" id="btn-edit-classes-top" title="Manage classes" type="button"><i class="fa-solid fa-tags"></i> Manage classes</button>
+        <div id="class-palette" class="class-palette" hidden role="dialog" aria-label="Class palette">
+          <div class="cp-head" id="cp-head">Set active class</div>
+          <div class="mc-search"><i class="fa-solid fa-magnifying-glass"></i><input id="cp-search" type="search" placeholder="Type to filter classes" aria-label="Filter classes" spellcheck="false" autocomplete="off"></div>
+          <div id="cp-list" class="cp-list" role="listbox" aria-label="Classes"></div>
+          <div class="cp-foot"><kbd>↑</kbd><kbd>↓</kbd> move · <kbd>Enter</kbd> choose · <kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>9</kbd> pin to key · <kbd>Esc</kbd> close</div>
         </div>
-        <div class="bc-wrap" title="Contrast">
-          <label><i class="fa-solid fa-circle-half-stroke"></i></label>
-          <input type="range" id="bc-contrast" min="0.3" max="2.5" step="0.05" value="1">
-          <button id="bc-contrast-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
-        </div>
-        <!-- Extra Filters -->
-        <div class="bc-wrap" title="Extra Filters">
-          <select id="extra-filter-type" style="background:transparent; color:#94a3b8; border:none; outline:none; cursor:pointer; font-size:13px; font-weight:600;">
-             <option value="none" style="background:#0f172a; color:#fff">Filter</option>
-             <option value="saturate" style="background:#0f172a; color:#fff">Saturate</option>
-             <option value="grayscale" style="background:#0f172a; color:#fff">Grayscale</option>
-             <option value="invert" style="background:#0f172a; color:#fff">Invert</option>
-             <option value="sepia" style="background:#0f172a; color:#fff">Sepia</option>
-          </select>
-          <input type="range" id="extra-filter-val" min="0" max="100" step="1" value="0">
-          <button id="extra-filter-reset" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
-        </div>
-        <button class="tbtn red" id="btn-del-img" title="Delete image"><i class="fa-solid fa-trash"></i> Del</button>
-        <button id="btn-save-next" title="Save & go next (Enter)"><i class="fa-solid fa-check"></i> Save & Next</button>
       </div>
 
       <div id="canvas-wrapper">
@@ -311,61 +453,51 @@
           <div id="loading-text">Select an image to begin</div>
         </div>
         <canvas id="annot-canvas"></canvas>
-        <canvas id="minimap" class="pos-abs w-120 border-blue border-radius-4 d-none bg-black"></canvas>
-        <!-- Inline class popup -->
-        <div id="class-popup">
-          <div class="popup-title">NEW BOX — SELECT CLASS</div>
-          <select id="popup-cls-sel"></select>
-          <div class="popup-btns">
-            <button id="popup-confirm"><i class="fa-solid fa-check"></i> Save</button>
-            <button id="popup-cancel"><i class="fa-solid fa-xmark"></i> Cancel</button>
-          </div>
-        </div>
-        <button class="cnav" id="nav-prev">‹</button>
-        <button class="cnav" id="nav-next">›</button>
+        <canvas id="minimap" class="minimap" style="display:none;"></canvas>
+        <button class="cnav" id="nav-prev" title="Previous image (Left arrow)" aria-label="Previous image">‹</button>
+        <button class="cnav" id="nav-next" title="Next image (Right arrow)" aria-label="Next image">›</button>
       </div>
-      <!-- Hotkey hint bar -->
-      <div class="hotkeys-bar">
-        <span><span class="hk">Ctrl</span> Draw (Hold)</span>
-        <span><span class="hk">D</span> Draw (Toggle)</span>
-        <span><span class="hk">F</span> Fit</span>
-        <span><span class="hk">Ctrl+Z</span> Undo</span>
-        <span><span class="hk">1-9</span> Set class</span>
-        <span><span class="hk">Q/E</span> Cycle class</span>
-        <span><span class="hk">←/→</span> Navigate</span>
-        <span><span class="hk">J</span> Next unannotated</span>
-        <span><span class="hk">Enter</span> Save+Next</span>
-        <span><span class="hk">Del</span> Delete box</span>
-        <span><span class="hk">Wheel</span> Zoom</span>
-        <span><span class="hk">Mid-drag</span> Pan</span>
+
+      <!-- Status bar -->
+      <div id="status-bar">
+        <span class="sb-item" id="sb-index">No image</span>
+        <span class="sb-item mono" id="sb-size" title="Image size in pixels">–</span>
+        <span class="sb-item mono" id="sb-zoom" title="Zoom">–</span>
+        <span class="sb-item mono" id="sb-cursor" title="Cursor position in image pixels">–</span>
+        <span class="sb-item" id="sb-mode">Select</span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item sb-save saved" id="sb-save">Saved</span>
+        <button class="sb-review pending" id="sb-review" title="Toggle reviewed (R)">Pending</button>
+        <button class="sb-help" id="btn-shortcuts" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
       </div>
     </div>
 
     <!-- RIGHT SIDEBAR -->
     <div id="right">
       <div class="rtabs">
-        <div class="rtab active" data-panel="boxes">Boxes</div>
+        <div class="rtab active" data-panel="boxes" id="rtab-boxes">Shapes</div>
         <div class="rtab" data-panel="split">Split</div>
-        <div class="rtab" data-panel="train">Train & Tools</div>
+        <div class="rtab" data-panel="train">Train and tools</div>
       </div>
 
-      <!-- BOXES PANEL -->
+      <!-- SHAPES PANEL -->
       <div class="rpanel active" id="panel-boxes">
-        <div id="boxes-panel" class="flex-1 overflow-y-auto border-b-dark"></div>
-        <div id="history-panel" class="h-120 overflow-y-auto bg-dark-panel border-b-dark p-8">
-          <div class="fs-10 text-slate fw-700 mb-6 text-uppercase">
-            Action History (Image)
-          </div>
-          <div id="history-list" class="d-flex flex-col gap-4"></div>
+        <div id="boxes-panel" class="boxes-scroll"></div>
+        <button id="add-box-btn"><i class="fa-solid fa-vector-square" id="add-box-icon"></i> <span id="add-box-label">Add box</span></button>
+        <div id="history-panel" class="history-panel collapsed">
+          <button class="history-toggle" id="history-toggle" type="button" aria-expanded="false" aria-controls="history-list">
+            <i class="fa-solid fa-chevron-right"></i> History for this image <span class="history-count" id="history-count"></span>
+          </button>
+          <div id="history-list" class="history-list"></div>
         </div>
-        <button id="add-box-btn" class="mt-8"><i class="fa-solid fa-plus"></i> Add Box</button>
         <div class="rfoot">
-          <button class="btn btn-primary btn-full" id="btn-save"><i class="fa-solid fa-floppy-disk"></i> Save
-            Annotations</button>
-          <div class="mt-10 p-8 bg-darker-panel border-dark border-radius-6">
-            <div class="fs-10 text-slate fw-700 mb-6 text-uppercase">
-              Class Shortcuts</div>
-            <div id="dynamic-class-hotkeys" class="grid-2 gap-5 fs-11"></div>
+          <div id="slot-hotkeys" class="slot-hotkeys d-none" aria-label="Class keys"></div>
+          <button class="btn btn-primary btn-full" id="btn-save"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+          <div class="panel-class-actions">
+            <button class="btn btn-secondary" id="btn-edit-classes-panel" title="Rename, merge or delete classes"><i class="fa-solid fa-tags"></i> Manage classes</button>
+            <div class="mc-anchor mc-anchor-up" id="mc-anchor-panel">
+              <button class="btn btn-secondary btn-full" id="btn-choose-classes-panel" type="button" aria-haspopup="true" aria-expanded="false" title="Choose which model classes are auto-labelled"><i class="fa-solid fa-wand-magic-sparkles"></i> <span id="mc-panel-text">Choose classes</span></button>
+            </div>
           </div>
         </div>
       </div>
@@ -373,361 +505,356 @@
       <!-- SPLIT PANEL -->
       <div class="rpanel" id="panel-split">
         <div class="split-info" id="split-stats">
-          <div class="split-info-row"><span class="split-info-label">Total images</span><span class="split-info-val"
-              id="sst-total">–</span></div>
-          <div class="split-info-row"><span class="split-info-label">Annotated</span><span class="split-info-val"
-              id="sst-anno">–</span></div>
+          <div class="split-info-row"><span class="split-info-label">Total images</span><span class="split-info-val" id="sst-total">–</span></div>
+          <div class="split-info-row"><span class="split-info-label">Labelled</span><span class="split-info-val" id="sst-anno">–</span></div>
+          <div class="split-info-row"><span class="split-info-label">Reviewed</span><span class="split-info-val" id="sst-rev">–</span></div>
           <div class="split-bar-wrap">
             <div class="split-bar-t" id="sbar-t" style="width:70%"></div>
             <div class="split-bar-v" id="sbar-v" style="width:20%"></div>
             <div class="split-bar-x" id="sbar-x" style="width:10%"></div>
           </div>
           <div class="d-flex gap-8 fs-10 text-slate-dark">
-            <span><i class="fa-solid fa-circle text-blue"></i> Train <b id="sst-tr">–</b></span>
-            <span><i class="fa-solid fa-circle text-green"></i> Valid <b id="sst-vl">–</b></span>
-            <span><i class="fa-solid fa-circle text-orange"></i> Test <b id="sst-ts">–</b></span>
+            <span><span class="legend-sw legend-t"></span> Train <b id="sst-tr">–</b></span>
+            <span><span class="legend-sw legend-v"></span> Valid <b id="sst-vl">–</b></span>
+            <span><span class="legend-sw legend-x"></span> Test <b id="sst-ts">–</b></span>
           </div>
         </div>
 
-        <!-- Class distribution chart -->
         <div class="cls-chart">
-          <div class="cls-chart-title"><i class="fa-solid fa-chart-pie"></i> Class Distribution</div>
+          <div class="cls-chart-title d-flex justify-between align-center"><span><i class="fa-solid fa-chart-simple"></i> Class distribution</span><button class="btn btn-secondary btn-sm" id="btn-manage-classes-chart" title="Rename, merge or delete classes"><i class="fa-solid fa-tags"></i> Manage</button></div>
           <div id="cls-chart-body">
             <div class="fs-11 text-slate-darker text-center p-8">Loading…</div>
           </div>
         </div>
 
-        <div class="field-label mb-6">Split Ratio</div>
+        <div class="field-label mb-6">Split ratio</div>
         <div class="ratio-row mb-12">
-          <div class="ratio-col"><label>Train %</label><input type="number" id="sp-train" value="70" min="1" max="98" />
-          </div>
-          <div class="ratio-col"><label>Valid %</label><input type="number" id="sp-valid" value="20" min="1" max="98" />
-          </div>
-          <div class="ratio-col"><label>Test %</label><input type="number" id="sp-test" value="10" min="1" max="98" />
-          </div>
+          <div class="ratio-col"><label for="sp-train">Train %</label><input type="number" id="sp-train" value="70" min="0" max="100" /></div>
+          <div class="ratio-col"><label for="sp-valid">Valid %</label><input type="number" id="sp-valid" value="20" min="0" max="100" /></div>
+          <div class="ratio-col"><label for="sp-test">Test %</label><input type="number" id="sp-test" value="10" min="0" max="100" /></div>
         </div>
         <p class="fs-11 text-slate-dark mb-12 lh-15">
-          Only <strong class="text-green-info">annotated</strong> images are split. Unannotated images remain in their
-          current folder.
+          Only labelled images are moved between splits. Images without labels stay where they are.
         </p>
-        <button class="btn btn-purple btn-full" id="btn-auto-split"><i class="fa-solid fa-shuffle"></i> Auto-Split
-          Dataset</button>
-        <div id="split-result" class="mt-8 d-none fs-12 text-green-info text-center">
-        </div>
+        <button class="btn btn-primary btn-full" id="btn-auto-split"><i class="fa-solid fa-shuffle"></i> Auto-split dataset</button>
+        <div id="split-result" class="field-msg ok mt-8 d-none"></div>
       </div>
 
-      <!-- TRAINING & TOOLS PANEL -->
+      <!-- TRAIN & TOOLS PANEL -->
       <div class="rpanel" id="panel-train">
-        <!-- Sub-Tabs Header -->
         <div class="train-subtabs mb-12">
-          <button class="tsubtab active" data-tsub="train"><i class="fa-solid fa-fire"></i> Train</button>
-          <button class="tsubtab" data-tsub="resize"><i class="fa-solid fa-expand"></i> Resize</button>
+          <button class="tsubtab active" data-tsub="train"><i class="fa-solid fa-graduation-cap"></i> Train</button>
+          <button class="tsubtab" data-tsub="resize"><i class="fa-solid fa-crop-simple"></i> Resize</button>
           <button class="tsubtab" data-tsub="compress"><i class="fa-solid fa-file-zipper"></i> Compress</button>
         </div>
 
-        <!-- SUB-PANEL 1: MODEL TRAINING -->
         <div class="tsubpanel active" id="tsub-panel-train">
           <div class="train-field">
-            <label>Base Model</label>
+            <label for="tr-model">Base model</label>
             <select id="tr-model">
-              <optgroup label="YOLO26 (Next-Gen)">
-                <option value="yolo26n.pt">YOLO26 Nano</option>
-                <option value="yolo26s.pt">YOLO26 Small</option>
-                <option value="yolo26m.pt">YOLO26 Medium</option>
-                <option value="yolo26l.pt">YOLO26 Large</option>
-                <option value="yolo26x.pt">YOLO26 XLarge</option>
+              <optgroup label="YOLO26">
+                <option value="yolo26n.pt">YOLO26 nano</option>
+                <option value="yolo26s.pt">YOLO26 small</option>
+                <option value="yolo26m.pt">YOLO26 medium</option>
+                <option value="yolo26l.pt">YOLO26 large</option>
+                <option value="yolo26x.pt">YOLO26 x-large</option>
               </optgroup>
               <optgroup label="YOLO11">
-                <option value="yolo11n.pt">YOLO11 Nano</option>
-                <option value="yolo11s.pt">YOLO11 Small</option>
-                <option value="yolo11m.pt">YOLO11 Medium</option>
-                <option value="yolo11l.pt">YOLO11 Large</option>
-                <option value="yolo11x.pt">YOLO11 XLarge</option>
+                <option value="yolo11n.pt">YOLO11 nano</option>
+                <option value="yolo11s.pt">YOLO11 small</option>
+                <option value="yolo11m.pt">YOLO11 medium</option>
+                <option value="yolo11l.pt">YOLO11 large</option>
+                <option value="yolo11x.pt">YOLO11 x-large</option>
               </optgroup>
               <optgroup label="YOLOv8">
-                <option value="yolov8n.pt">YOLOv8 Nano (fastest)</option>
-                <option value="yolov8s.pt">YOLOv8 Small</option>
-                <option value="yolov8m.pt" selected>YOLOv8 Medium</option>
-                <option value="yolov8l.pt">YOLOv8 Large</option>
-                <option value="yolov8x.pt">YOLOv8 XLarge (best)</option>
+                <option value="yolov8n.pt">YOLOv8 nano (fastest)</option>
+                <option value="yolov8s.pt">YOLOv8 small</option>
+                <option value="yolov8m.pt" selected>YOLOv8 medium</option>
+                <option value="yolov8l.pt">YOLOv8 large</option>
+                <option value="yolov8x.pt">YOLOv8 x-large (most accurate)</option>
               </optgroup>
             </select>
           </div>
           <div class="train-field">
-            <label>Custom .pt file <span class="text-slate-darker">(overrides above)</span></label>
+            <label for="tr-custom">Custom weights <span class="text-slate-darker">(overrides base model)</span></label>
             <select id="tr-custom"></select>
           </div>
           <div class="train-two">
-            <div class="train-field"><label>Epochs</label><input type="number" id="tr-epochs" value="50" min="1" /></div>
-            <div class="train-field"><label>Batch Size</label><input type="number" id="tr-batch" value="16" min="1" />
-            </div>
+            <div class="train-field"><label for="tr-epochs">Epochs</label><input type="number" id="tr-epochs" value="50" min="1" /></div>
+            <div class="train-field"><label for="tr-batch">Batch size</label><input type="number" id="tr-batch" value="16" min="1" /></div>
           </div>
           <div class="train-two">
-            <div class="train-field"><label>Image Size</label><input type="number" id="tr-imgsz" value="640" step="32" />
-            </div>
-            <div class="train-field"><label>LR (lr0)</label><input type="number" id="tr-lr" value="0.01" step="0.001" />
-            </div>
+            <div class="train-field"><label for="tr-imgsz">Image size</label><input type="number" id="tr-imgsz" value="640" step="32" /></div>
+            <div class="train-field"><label for="tr-lr">Learning rate (lr0)</label><input type="number" id="tr-lr" value="0.01" step="0.001" /></div>
           </div>
           <div class="train-two">
-            <div class="train-field"><label>Device <span class="text-green-info fs-10">(GPU Only)</span></label>
-              <select id="tr-device">
-                <option value="0" selected>GPU 0 (CUDA)</option>
-                <option value="1">GPU 1 (CUDA)</option>
-                <option value="mps">MPS (Apple Silicon)</option>
-              </select>
+            <div class="train-field"><label for="tr-device">Device <span class="text-slate-darker">(GPU only)</span></label>
+              <select id="tr-device"></select>
             </div>
-            <div class="train-field"><label>Run Name</label><input type="text" id="tr-name" value="vehicle_v1" /></div>
+            <div class="train-field"><label for="tr-name">Run name</label><input type="text" id="tr-name" value="run_v1" /></div>
           </div>
           <div id="train-log"></div>
           <div class="d-flex gap-5">
-            <button class="btn btn-primary flex-1 justify-center" id="btn-train"><i
-                class="fa-solid fa-play"></i> Start
-              Training</button>
+            <button class="btn btn-primary flex-1 justify-center" id="btn-train"><i class="fa-solid fa-play"></i> Start training</button>
             <button class="btn btn-danger" id="btn-stop-train"><i class="fa-solid fa-stop"></i> Stop</button>
           </div>
-          <div id="gpu-train-warning" class="mt-8 p-8 bg-darker-panel border-red-dark border-radius-6 fs-11 text-red-warning text-center d-none">
-            <i class="fa-solid fa-triangle-exclamation mr-4"></i>
-            <strong>GPU Required:</strong> CPU training is disabled. Connect a CUDA GPU or Apple Silicon MPS to train models.
+          <div id="gpu-train-warning" class="field-msg err mt-8 d-none">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Training needs a CUDA GPU or Apple Silicon (MPS). No supported device was found on this machine.
           </div>
           <div id="train-status" class="fs-11 text-slate-dark text-center mt-5"></div>
         </div>
 
-        <!-- SUB-PANEL 2: DATASET RESIZER (CPU MULTI-THREADED) -->
         <div class="tsubpanel d-none" id="tsub-panel-resize">
           <div class="fs-12 text-slate-light mb-10 lh-14">
-            <i class="fa-solid fa-circle-info text-blue mr-4"></i>
-            Resizes all images and scales bounding box / polygon coordinates automatically. Runs on multi-threaded CPU on all devices.
+            Resizes every image and rescales box and polygon coordinates to match. Runs on the CPU with several threads.
           </div>
           <div class="train-field">
-            <label>Target Resolution</label>
+            <label for="tool-resize-size">Target size</label>
             <select id="tool-resize-size" class="field-select glass-input">
-              <option value="640" selected>640 × 640 (Standard YOLO)</option>
-              <option value="1280">1280 × 1280 (High Resolution)</option>
-              <option value="416">416 × 416 (Fast Mobile)</option>
-              <option value="320">320 × 320 (Ultra Lightweight)</option>
+              <option value="640" selected>640 × 640 (standard YOLO)</option>
+              <option value="1280">1280 × 1280 (high resolution)</option>
+              <option value="416">416 × 416 (fast, mobile)</option>
+              <option value="320">320 × 320 (smallest)</option>
             </select>
           </div>
           <div class="train-field">
-            <label>Resize Algorithm</label>
+            <label for="tool-resize-mode">Resize method</label>
             <select id="tool-resize-mode" class="field-select glass-input">
-              <option value="letterbox" selected>Letterbox (YOLO 114 Gray Padding)</option>
-              <option value="stretch">Direct Stretch</option>
-              <option value="max_edge">Keep Aspect Ratio (Max Edge)</option>
+              <option value="letterbox" selected>Letterbox (gray padding, YOLO style)</option>
+              <option value="stretch">Stretch</option>
+              <option value="max_edge">Keep aspect ratio (longest edge)</option>
             </select>
           </div>
           <div class="train-two">
             <div class="train-field">
-              <label>JPEG Quality</label>
+              <label for="tool-resize-quality">JPEG quality</label>
               <input type="number" id="tool-resize-quality" value="95" min="50" max="100" />
             </div>
             <div class="train-field">
-              <label>Worker Threads</label>
+              <label for="tool-resize-workers">Threads</label>
               <input type="number" id="tool-resize-workers" value="8" min="1" max="32" />
             </div>
           </div>
-          
-          <button class="btn btn-primary btn-full mt-10" id="btn-tool-resize">
-            <i class="fa-solid fa-expand"></i> Resize Dataset
-          </button>
-
-          <!-- Live Progress Bar -->
+          <button class="btn btn-primary btn-full mt-10" id="btn-tool-resize"><i class="fa-solid fa-crop-simple"></i> Resize dataset</button>
           <div class="prog-wrap glass-prog mt-12 d-none" id="resize-prog-wrap">
             <div class="prog-header">
               <span id="resize-prog-label">Resizing images…</span>
               <span id="resize-prog-num">0%</span>
             </div>
             <div class="prog-track"><div class="prog-bar" id="resize-prog-bar"></div></div>
-            <div class="prog-status" id="resize-prog-status">Initializing...</div>
+            <div class="prog-status" id="resize-prog-status">Starting…</div>
           </div>
         </div>
 
-        <!-- SUB-PANEL 3: DATASET COMPRESSOR (CPU MULTI-THREADED) -->
         <div class="tsubpanel d-none" id="tsub-panel-compress">
           <div class="fs-12 text-slate-light mb-10 lh-14">
-            <i class="fa-solid fa-circle-info text-blue mr-4"></i>
-            Parallel multi-threaded archiving with temp file cleaning. Downloads immediately upon completion.
+            Packs the dataset into an archive and downloads it when finished.
           </div>
           <div class="train-field">
-            <label>Archive Format</label>
+            <label for="tool-compress-format">Archive format</label>
             <select id="tool-compress-format" class="field-select glass-input">
-              <option value="zip" selected>.ZIP (Fast & Compatible)</option>
-              <option value="7z">.7Z (High Compression LZMA)</option>
-              <option value="tar.gz">.TAR.GZ (Linux / Cloud)</option>
-              <option value="tar.xz">.TAR.XZ (Ultra Compression)</option>
+              <option value="zip" selected>.zip (fast, widely supported)</option>
+              <option value="7z">.7z (high compression)</option>
+              <option value="tar.gz">.tar.gz (Linux, cloud)</option>
+              <option value="tar.xz">.tar.xz (smallest)</option>
             </select>
           </div>
           <div class="train-field">
-            <label>Compression Level</label>
+            <label for="tool-compress-method">Compression level</label>
             <select id="tool-compress-method" class="field-select glass-input">
-              <option value="deflated" selected>Standard (Balanced)</option>
-              <option value="lzma">LZMA (Maximum Space Saved)</option>
-              <option value="stored">Stored (No Compression - Fast Copy)</option>
+              <option value="deflated" selected>Standard</option>
+              <option value="lzma">Maximum (LZMA)</option>
+              <option value="stored">None (fastest)</option>
             </select>
           </div>
           <div class="d-flex align-center gap-8 mb-12">
             <input type="checkbox" id="tool-compress-verify" checked />
-            <label for="tool-compress-verify" class="fs-12 text-slate-light cursor-pointer">Verify archive integrity (Checksum)</label>
+            <label for="tool-compress-verify" class="fs-12 text-slate-light cursor-pointer">Verify the archive after writing it</label>
           </div>
-
-          <button class="btn btn-primary btn-full mt-4" id="btn-tool-compress">
-            <i class="fa-solid fa-file-zipper"></i> Compress & Package
-          </button>
-
-          <!-- Live Progress Bar -->
+          <button class="btn btn-primary btn-full mt-4" id="btn-tool-compress"><i class="fa-solid fa-file-zipper"></i> Compress and download</button>
           <div class="prog-wrap glass-prog mt-12 d-none" id="compress-prog-wrap">
             <div class="prog-header">
               <span id="compress-prog-label">Compressing dataset…</span>
               <span id="compress-prog-num">0%</span>
             </div>
             <div class="prog-track"><div class="prog-bar" id="compress-prog-bar"></div></div>
-            <div class="prog-status" id="compress-prog-status">Initializing...</div>
+            <div class="prog-status" id="compress-prog-status">Starting…</div>
             <div id="compress-download-btn-wrap" class="mt-8 d-none">
-              <a href="#" class="btn btn-success btn-full text-center text-white" id="compress-download-link">
-                <i class="fa-solid fa-download"></i> Download Archive
-              </a>
+              <a href="#" class="btn btn-success btn-full text-center" id="compress-download-link"><i class="fa-solid fa-download"></i> Download archive</a>
             </div>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 
   <!-- IMAGE MODAL -->
-  <div id="image-modal">
-    <button class="im-close" onclick="closeImageModal()">×</button>
+  <div id="image-modal" role="dialog" aria-modal="true" aria-labelledby="im-title">
+    <button class="im-close" id="btn-close-image-modal" aria-label="Close">×</button>
     <div id="im-content">
-      <div id="im-left">
-        <!-- Full image and boxes drawn dynamically -->
-      </div>
+      <div id="im-left"></div>
       <div id="im-right">
         <div class="im-title" id="im-title">image.jpg</div>
-        <div class="im-meta" id="im-meta">Size: 0x0 | Split: train</div>
-        <div class="field-label mt-10">Objects in Image</div>
-        <div class="im-classes" id="im-classes">
-          <!-- Badges go here -->
-        </div>
+        <div class="im-meta" id="im-meta"></div>
+        <div class="field-label mt-10">Objects</div>
+        <div class="im-classes" id="im-classes"></div>
         <div class="d-flex gap-10 my-10">
-          <button class="btn btn-secondary flex-1" id="btn-modal-prev">← Prev</button>
-          <button class="btn btn-secondary flex-1" id="btn-modal-next">Next →</button>
+          <button class="btn btn-secondary flex-1" id="btn-modal-prev" title="Previous (Left arrow)">Previous</button>
+          <button class="btn btn-secondary flex-1" id="btn-modal-next" title="Next (Right arrow)">Next</button>
         </div>
-        <button class="btn btn-primary btn-full" id="btn-jump-anno"><i class="fa-solid fa-pen"></i> Jump to
-          Annotation</button>
+        <button type="button" class="btn btn-secondary btn-full mb-8" id="btn-modal-toggle-roi" title="Toggle ROI / annotations on this image (H)"><i class="fa-solid fa-eye" id="modal-roi-icon"></i> <span id="modal-roi-label">ROI: On</span></button>
+        <button class="btn btn-primary btn-full" id="btn-jump-anno" title="Open in the annotator (Enter)"><i class="fa-solid fa-pen-nib"></i> Open in annotator</button>
+        <button class="btn btn-danger btn-full mt-8" id="btn-modal-delete" title="Delete this image (Delete)"><i class="fa-solid fa-trash"></i> Delete image</button>
       </div>
     </div>
   </div>
 
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
 
   <!-- ADD IMAGES MODAL -->
-  <div id="add-images-modal" class="screen hidden modal-backdrop">
-    <div class="modal-content modal-shadow bg-darker-panel p-20 border-radius-8 w-400 border-dark">
-      <div class="d-flex justify-between align-center mb-15">
-        <h3 class="text-white fs-18"><i class="fa-solid fa-images text-blue mr-6"></i> Add More Images</h3>
-        <button class="im-close fs-20 pos-static" id="btn-close-add-modal" onclick="document.getElementById('add-images-modal').classList.add('hidden')">&times;</button>
+  <div id="add-images-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="add-images-title">
+    <div class="modal-content w-400">
+      <div class="modal-head">
+        <h3 id="add-images-title" class="modal-title"><i class="fa-solid fa-images"></i> Add images</h3>
+        <button class="im-close pos-static" data-close-modal aria-label="Close">&times;</button>
       </div>
-
-      <div class="field-label">Select Folder <span class="hint">(containing images to add)</span></div>
-      <div class="d-flex gap-8 mb-16">
-        <input type="text" id="add-src-input" class="glass-input flex-1" placeholder="Enter or paste folder path..." />
-        <button class="btn btn-secondary" id="btn-browse-add-src" title="Browse or enter folder"><i class="fa-solid fa-folder"></i></button>
+      <div class="modal-body">
+      <div class="field-label">Image folder</div>
+      <div class="d-flex gap-8 mb-8">
+        <input type="text" id="add-src-input" class="glass-input flex-1" placeholder="Paste a folder path" spellcheck="false" />
+        <button class="btn btn-secondary" id="btn-browse-add-src" title="Browse for a folder"><i class="fa-solid fa-folder-open"></i></button>
       </div>
-      <div id="new-info" class="fs-11 text-green-info mt-neg-10 mb-12 d-none"></div>
+      <div id="new-info" class="field-msg d-none mb-8"></div>
+      <div class="field-msg muted">New images go into the train split. Files that are already in the dataset are skipped.</div>
 
-      <div id="add-ingest-prog" class="prog-wrap">
-        <div class="prog-header"><span>Copying...</span><span id="add-ip-num">0 / 0</span></div>
-        <div class="prog-track">
-          <div class="prog-bar" id="add-ip-bar"></div>
-        </div>
+      <div id="add-ingest-prog" class="prog-wrap d-none">
+        <div class="prog-header"><span>Adding images…</span><span id="add-ip-num">0 / 0</span></div>
+        <div class="prog-track"><div class="prog-bar" id="add-ip-bar"></div></div>
         <div class="prog-status" id="add-ip-status"></div>
       </div>
 
-      <div class="d-flex gap-10 mt-20">
-        <button class="btn btn-secondary flex-1 justify-center" id="btn-cancel-add">Cancel</button>
-        <button class="btn btn-primary flex-1 justify-center" id="btn-confirm-add"><i
-            class="fa-solid fa-download"></i> Load</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-cancel-add" data-close-modal>Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-add" disabled><i class="fa-solid fa-images"></i> Add images</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANAGE CLASSES MODAL -->
+  <div id="classes-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="classes-title">
+    <div class="modal-content max-w-800 cls-modal">
+      <div class="modal-head">
+        <h3 id="classes-title" class="modal-title"><i class="fa-solid fa-tags"></i> Manage classes</h3>
+        <button class="im-close pos-static" data-close-modal aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+      <div class="cls-toolbar">
+        <button class="btn btn-secondary btn-sm" id="btn-cls-add"><i class="fa-solid fa-plus"></i> Add class</button>
+        <button class="btn btn-secondary btn-sm" id="btn-cls-merge" disabled><i class="fa-solid fa-code-merge"></i> Merge selected into…</button>
+        <button class="btn btn-secondary btn-sm" id="btn-cls-delete" disabled><i class="fa-solid fa-trash"></i> Delete</button>
+        <span class="sb-spacer"></span>
+        <button class="btn btn-secondary btn-sm" id="btn-cls-backups"><i class="fa-solid fa-clock-rotate-left"></i> Backups</button>
+      </div>
+      <div id="cls-action" class="cls-action d-none"></div>
+      <div class="cls-table-wrap">
+        <table class="cls-table">
+          <thead>
+            <tr>
+              <th class="cls-col-check"><input type="checkbox" id="cls-check-all" aria-label="Select all classes" /></th>
+              <th class="cls-col-id">ID</th>
+              <th>Name</th>
+              <th class="cls-col-num">Boxes</th>
+              <th class="cls-col-num">Images</th>
+            </tr>
+          </thead>
+          <tbody id="cls-tbody"></tbody>
+        </table>
+      </div>
+      <div id="cls-unknown" class="field-msg warn mt-6 d-none"></div>
+      <div id="classes-modal-info" class="field-msg muted mt-6">Click a name to rename it. Renaming never changes labels. Merge and delete rewrite label files, and a backup is saved first.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-close-modal>Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEYBOARD SHORTCUTS MODAL -->
+  <div id="shortcuts-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+    <div class="modal-content max-w-800">
+      <div class="modal-head">
+        <h3 id="shortcuts-title" class="modal-title"><i class="fa-solid fa-keyboard"></i> Keyboard shortcuts</h3>
+        <button class="im-close pos-static" data-close-modal aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+      <div id="shortcuts-body" class="shortcut-groups"></div>
       </div>
     </div>
   </div>
 
   <!-- HELP MODAL -->
-  <div id="help-modal" class="screen d-none z-300">
-    <div class="card glass-card max-w-800 max-h-90vh overflow-y-auto">
-      <div class="card-title d-flex justify-between align-center mb-20">
-        <span><i class="fa-solid fa-circle-question text-blue"></i> Help & Shortcuts</span>
-        <button class="im-close fs-24 pos-static" id="help-close" onclick="document.getElementById('help-modal').classList.add('d-none')">&times;</button>
+  <div id="help-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="modal-content max-w-800 help-content">
+      <div class="modal-head">
+        <h3 id="help-title" class="modal-title"><i class="fa-solid fa-circle-question"></i> Help</h3>
+        <button class="im-close pos-static" data-close-modal aria-label="Close">&times;</button>
       </div>
-      
-      <h3 class="text-white mb-10 fs-16">🔄 End-to-End Workflow</h3>
-      <ol class="text-slate-light fs-13 lh-16 ml-20 mb-20">
-        <li><b>Select Model</b>: Pick any supported model file (.pt, .onnx, etc.). The tool auto-detects your GPU and extracts model classes.</li>
-        <li><b>Ingest Images</b>: Select a source folder and click "Load Images". Hardlinking prevents duplicating image data.</li>
-        <li><b>Review & Annotate</b>: YOLO will pre-annotate images in the background. Use the draw mode and hotkeys to perfect your dataset.</li>
-        <li><b>Auto-Split Dataset</b>: Configure your Train/Valid/Test ratios and execute "Auto-Split Dataset".</li>
-        <li><b>Train Model</b>: Go to the Training panel, adjust hyperparameters, and click "Start Training".</li>
-        <li><b>Export</b>: Return to the Grid View and click "Export Dataset" to download the finalized package.</li>
+      <div class="modal-body">
+      <h4 class="help-heading">Workflow</h4>
+      <ol class="help-steps">
+        <li><b>Load a model (optional).</b> Pick a pre-trained or local model. The tool uses your GPU if it finds one and reads the class names from the model. You can also add classes yourself with Manage classes.</li>
+        <li><b>Create a dataset.</b> Choose a folder of images and click Create dataset. Files are hard-linked where possible, so nothing is duplicated on disk.</li>
+        <li><b>Review.</b> If auto-labelling is on, each image is labelled the first time you open it. Fix the shapes, then press Enter to save and move on. Saved images are marked reviewed.</li>
+        <li><b>Split.</b> Set train, valid and test ratios in the Split tab and click Auto-split dataset.</li>
+        <li><b>Train.</b> In Train and tools, pick a base model and settings, then click Start training.</li>
+        <li><b>Export.</b> In Browse, choose YOLO or COCO and click Export.</li>
       </ol>
-      
-      <h3 class="text-white mb-10 fs-16">⌨️ Essential Keyboard Shortcuts</h3>
-      <div class="grid-2 gap-10">
-        <div class="bg-black-trans-20 p-10 border-radius-8">
-          <ul class="list-none text-slate-light fs-13 lh-18">
-            <li><span class="hk">D</span> Toggle Draw mode</li>
-            <li><span class="hk">F</span> Fit image to screen</li>
-            <li><span class="hk">C</span> Copy boxes from previous</li>
-            <li><span class="hk">J</span> Jump to next unannotated</li>
-            <li><span class="hk">Q</span> / <span class="hk">E</span> Cycle box class</li>
-            <li><span class="hk">1</span> - <span class="hk">9</span> Set class 1-9</li>
-          </ul>
-        </div>
-        <div class="bg-black-trans-20 p-10 border-radius-8">
-          <ul class="list-none text-slate-light fs-13 lh-18">
-            <li><span class="hk">←</span> / <span class="hk">→</span> Prev / Next image</li>
-            <li><span class="hk">Enter</span> Save & jump to next</li>
-            <li><span class="hk">Del</span> Delete box</li>
-            <li><span class="hk">Ctrl+Z</span> / <span class="hk">Y</span> Undo / Redo</li>
-            <li><span class="hk">Wheel</span> Zoom in/out</li>
-            <li><span class="hk">Mid-drag</span> Pan canvas</li>
-          </ul>
-        </div>
+      <h4 class="help-heading">Image status</h4>
+      <div class="help-status">
+        <span><i class="fa-regular fa-circle status-ic pending"></i> Pending: no labels yet</span>
+        <span><i class="fa-solid fa-wand-magic-sparkles status-ic auto"></i> Auto-labelled: needs review</span>
+        <span><i class="fa-solid fa-circle-check status-ic reviewed"></i> Reviewed: saved by a person</span>
+      </div>
+      <h4 class="help-heading">Keyboard shortcuts</h4>
+      <div id="help-shortcuts" class="shortcut-groups"></div>
       </div>
     </div>
   </div>
 
   <!-- HEALTH DASHBOARD MODAL -->
-  <div class="modal-overlay" id="health-modal">
+  <div class="modal-overlay" id="health-modal" role="dialog" aria-modal="true" aria-labelledby="health-title">
     <div class="modal-content max-w-600">
-      <h2 class="fs-18 mb-12"><i class="fa-solid fa-heart-pulse"></i> Dataset Health Dashboard</h2>
-      <div id="health-loading" class="text-center p-30 text-slate-light"><i class="fa-solid fa-spinner fa-spin"></i> Scanning entire dataset...</div>
-      
+      <div class="modal-head">
+        <h3 id="health-title" class="modal-title"><i class="fa-solid fa-heart-pulse"></i> Dataset health</h3>
+        <button class="im-close pos-static" data-close-modal aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+      <div id="health-loading" class="text-center p-30 text-slate-light"><i class="fa-solid fa-spinner fa-spin"></i> Scanning all splits…</div>
       <div id="health-results" class="d-none">
-        <div class="d-flex justify-between bg-darker-panel p-12 border-radius-6 mb-12">
+        <div class="health-summary">
           <div>
-            <div class="fs-12 text-slate fw-600 text-uppercase">Health Score</div>
-            <div id="health-score" class="fs-32 fw-800 text-green">100</div>
+            <div class="health-summary-label">Health score</div>
+            <div id="health-score" class="health-score">100</div>
           </div>
           <div class="text-right">
-            <div class="fs-12 text-slate fw-600 text-uppercase">Dataset Stats</div>
-            <div class="fs-14 fw-600 text-gray-light mt-4"><span id="health-total-imgs">0</span> Images</div>
-            <div class="fs-14 fw-600 text-gray-light"><span id="health-total-boxes">0</span> Annotations</div>
+            <div class="health-summary-label">Dataset</div>
+            <div class="health-summary-val"><span id="health-total-imgs">0</span> images</div>
+            <div class="health-summary-val"><span id="health-total-boxes">0</span> annotations</div>
           </div>
         </div>
-
-        <h3 class="fs-13 text-slate-light fw-600 text-uppercase mb-8">Anomaly Scan Results</h3>
-        
-        <div id="health-issues-list" class="d-flex flex-col gap-8">
-          <!-- Dynamically populated rows -->
-        </div>
-
+        <div class="panel-subtitle mb-8">Checks <span class="text-slate">(click a row to show those images)</span></div>
+        <div id="health-issues-list" class="d-flex flex-col gap-8"></div>
       </div>
-
-      <div class="modal-actions" style="margin-top:20px;">
-        <button class="btn btn-primary" id="btn-health-close">Close</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="btn-health-close" data-close-modal>Close</button>
       </div>
     </div>
   </div>
 
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v=1.2.3"></script>
 </body>
 
 </html>
